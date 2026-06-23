@@ -373,21 +373,22 @@ function processFile(file) {
     reader.onload = e => {
       try {
         const wb = XLSX.read(e.target.result, {type:'array'});
-        // Try Planilha2 first, fallback to first sheet
-        const sheetIdx = wb.SheetNames.length > 1 ? 1 : 0;
-        const ws = wb.Sheets[wb.SheetNames[sheetIdx]];
-        const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
-        let parsed = parseSheet(raw);
-        // If no products found, try other sheets
-        if(!parsed || parsed.products.length === 0) {
-          for(let i = 0; i < wb.SheetNames.length; i++) {
-            const ws2 = wb.Sheets[wb.SheetNames[i]];
-            const raw2 = XLSX.utils.sheet_to_json(ws2, {header:1, defval:null});
-            parsed = parseSheet(raw2);
-            if(parsed && parsed.products.length > 0) break;
+        const sheetNames = wb.SheetNames;
+        let parsed = null;
+        // Try each sheet, prefer the one with most products
+        for(let i = 0; i < sheetNames.length; i++) {
+          const ws = wb.Sheets[sheetNames[i]];
+          const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+          const p = parseSheet(raw);
+          if(p && p.products.length > 0) {
+            if(!parsed || p.products.length > parsed.products.length) parsed = p;
           }
         }
-        if(!parsed || parsed.products.length === 0) { document.getElementById('loading').classList.remove('show'); showError('Não foi possível ler a planilha. Verifique se o formato é o esperado (Código Família na coluna A).'); return; }
+        if(!parsed || parsed.products.length === 0) {
+          document.getElementById('loading').classList.remove('show');
+          showError('Planilha lida mas sem dados reconhecidos. Certifique-se de que a coluna A contém "Código Família" como cabeçalho de cada bloco. Abas encontradas: ' + sheetNames.join(', '));
+          return;
+        }
         G = parsed;
         buildDashboard();
         document.getElementById('loading').classList.remove('show');
