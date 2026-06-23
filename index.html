@@ -373,9 +373,20 @@ function processFile(file) {
     reader.onload = e => {
       try {
         const wb = XLSX.read(e.target.result, {type:'array'});
-        const ws = wb.Sheets[wb.SheetNames[0]];
+        // Try Planilha2 first, fallback to first sheet
+        const sheetIdx = wb.SheetNames.length > 1 ? 1 : 0;
+        const ws = wb.Sheets[wb.SheetNames[sheetIdx]];
         const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
-        const parsed = parseSheet(raw);
+        let parsed = parseSheet(raw);
+        // If no products found, try other sheets
+        if(!parsed || parsed.products.length === 0) {
+          for(let i = 0; i < wb.SheetNames.length; i++) {
+            const ws2 = wb.Sheets[wb.SheetNames[i]];
+            const raw2 = XLSX.utils.sheet_to_json(ws2, {header:1, defval:null});
+            parsed = parseSheet(raw2);
+            if(parsed && parsed.products.length > 0) break;
+          }
+        }
         if(!parsed || parsed.products.length === 0) { document.getElementById('loading').classList.remove('show'); showError('Não foi possível ler a planilha. Verifique se o formato é o esperado (Código Família na coluna A).'); return; }
         G = parsed;
         buildDashboard();
@@ -394,53 +405,93 @@ function processFile(file) {
 function parseSheet(rows) {
   const products = [];
   let currentFamily = null;
+
+  // Format detection: scan first data row
+  // New (Planilha2): col2=oferta(>0), col4=ei(large int), col6=tv(int), col8=retorno(>0 or 0)
+  // Old (Planilha1): col3=oferta(>0), col9=ei(large int), col11=tv(int), col13=retorno
   let fmt = 'old';
   for(const row of rows) {
-    if(row[0] === 'Código Família') {
-      const h2 = String(row[2]||'').toLowerCase();
-      if(h2.includes('oferta') || h2.includes('emb') === false && h2 !== '') fmt = 'new';
-      break;
-    }
+    if(row[0] === 'Código Família') continue;
+    const cod = parseFloat(row[0]);
+    if(isNaN(cod)) continue;
+    // In new format: col2 is oferta (small positive price like 2.19, 9.79)
+    // In old format: col2 is 'emb' (string like 'UN 1')
+    const c2 = parseFloat(row[2]);
+    const c3 = parseFloat(row[3]);
+    // New: col2 is numeric price, col3 is negative vlr_amarrar
+    // Old: col2 is string (NaN), col3 is numeric price
+    if(!isNaN(c2) && c2 > 0 && (isNaN(c3) || c3 < 0)) { fmt = 'new'; }
+    break;
   }
+
   for(const row of rows) {
     if(row[0] === 'Código Família') { currentFamily = String(row[1]||'').trim(); continue; }
     if(row[0] == null || String(row[0]).trim() === '') continue;
     const cod = parseFloat(row[0]);
     if(isNaN(cod)) continue;
-    let tv,oferta,liq,tg,ei,ea,ret,lu,cm,md,de,dsv,fat,lucro,inv,margem,roi;
+
+    let tv,oferta,tg,ei,ea,ret,lu,cm,md,de,dsv,liq;
     if(fmt === 'new') {
-      oferta=parseFloat(row[2])||0; ei=parseInt(row[4])||0; ea=parseInt(row[5])||0;
-      tv=parseFloat(row[6])||0; tg=parseFloat(row[7])||0; ret=parseFloat(row[8])||0;
-      lu=parseFloat(row[9])||0; cm=parseFloat(row[10])||0; md=parseFloat(row[11])||0;
-      de=parseFloat(row[12])||0; dsv=parseFloat(row[13])||0;
-      fat=ret>0?+ret.toFixed(2):tv>0?+(tv*oferta).toFixed(2):0;
-      lucro=tv>0?+(lu*tv).toFixed(2):0;
-      inv=tv>0&&tg<0?+Math.abs(tg).toFixed(2):0;
-      margem=fat>0&&lucro>0?+(lucro/fat*100).toFixed(1):cm>0?+cm.toFixed(1):null;
-      roi=inv>0?+((lucro-inv)/inv*100).toFixed(1):null;
+      // Planilha2: A=cod, B=prod, C=oferta, D=vlr_amarrar, E=ei, F=ea, G=tv, H=tg, I=ret, J=lu_unit, K=cm%, L=md, M=de, N=dsv
+      oferta = parseFloat(row[2])||0;
+      ei     = parseInt(row[4])||0;
+      ea     = parseInt(row[5])||0;
+      tv     = parseFloat(row[6])||0;
+      tg     = parseFloat(row[7])||0;
+      ret    = parseFloat(row[8])||0;
+      lu     = parseFloat(row[9])||0;
+      cm     = parseFloat(row[10])||0;
+      md     = parseFloat(row[11])||0;
+      de     = parseFloat(row[12])||0;
+      dsv    = parseFloat(row[13])||0;
     } else {
-      oferta=parseFloat(row[3])||0; liq=parseFloat(row[7])||0;
-      ei=parseInt(row[9])||0; ea=parseInt(row[10])||0;
-      tv=parseFloat(row[11])||0; tg=parseFloat(row[12])||0;
+      // Planilha1: A=cod, B=prod, C=emb, D=oferta, E=oferta28d, F=medio, G=%, H=liq, I=vlr_amarrar, J=ei, K=ea, L=tv, M=tg, N=ret
+      oferta = parseFloat(row[3])||0;
+      liq    = parseFloat(row[7])||0;
+      ei     = parseInt(row[9])||0;
+      ea     = parseInt(row[10])||0;
+      tv     = parseFloat(row[11])||0;
+      tg     = parseFloat(row[12])||0;
+      ret    = parseFloat(row[13])||0;
       lu=0; cm=0; md=0; de=0; dsv=0;
-      fat=tv>0?+(tv*oferta).toFixed(2):0;
-      const custo=tv>0?+(tv*liq).toFixed(2):0;
-      lucro=+(fat-custo).toFixed(2);
-      inv=tv>0&&tg<0?+Math.abs(tg).toFixed(2):0;
-      margem=fat>0?+(lucro/fat*100).toFixed(1):null;
-      roi=inv>0?+((lucro-inv)/inv*100).toFixed(1):null;
     }
-    const re=ei>0?+Math.max(0,Math.min(100,(ei-ea)/ei*100)).toFixed(1):0;
-    let st='sem_venda';
-    if(tv<0) st='anomalia';
-    else if(tv===0) st='sem_venda';
-    else if(roi!==null&&roi<0) st='critico';
-    else if(lucro>2000&&(margem||0)>10) st='estrela';
-    else if(roi!==null&&roi>100) st='oportunidade';
-    else if((margem||0)<8&&tv>0) st='alerta';
-    else if(tv>0) st='volume';
-    products.push({c:parseInt(cod),p:String(row[1]||'').trim(),f:currentFamily||'—',tv,fat,lb:lucro,mg:margem,inv,roi,re,ei,ea,oferta,lu,cm,md,de,dsv,st});
+
+    // CALCULATE METRICS
+    let fat, lucro, inv, margem, roi;
+    const re = ei>0 ? +Math.max(0,Math.min(100,(ei-ea)/ei*100)).toFixed(1) : 0;
+
+    if(fmt === 'new') {
+      fat   = ret > 0 ? +ret.toFixed(2) : (tv > 0 ? +(tv*oferta).toFixed(2) : 0);
+      lucro = tv > 0 && lu > 0 ? +(lu*tv).toFixed(2) : (fat > 0 && cm > 0 ? +(fat*cm/100).toFixed(2) : 0);
+      inv   = tv > 0 && tg < 0 ? +Math.abs(tg).toFixed(2) : 0;
+      margem = fat > 0 && lucro !== 0 ? +(lucro/fat*100).toFixed(1) : (cm > 0 ? +cm.toFixed(1) : null);
+      roi   = inv > 0 ? +((lucro-inv)/inv*100).toFixed(1) : null;
+    } else {
+      fat   = tv > 0 ? +(tv*oferta).toFixed(2) : 0;
+      const custo = tv > 0 ? +(tv*(liq||0)).toFixed(2) : 0;
+      lucro = +(fat-custo).toFixed(2);
+      inv   = tv > 0 && tg < 0 ? +Math.abs(tg).toFixed(2) : 0;
+      margem = fat > 0 ? +(lucro/fat*100).toFixed(1) : null;
+      roi   = inv > 0 ? +((lucro-inv)/inv*100).toFixed(1) : null;
+    }
+
+    // STATUS — priority order matters
+    let st;
+    if(tv < 0)                                      st = 'anomalia';
+    else if(tv === 0)                               st = 'sem_venda';
+    else if(roi !== null && roi < 0)                st = 'critico';
+    else if(lucro > 2000 && (margem||0) > 10)      st = 'estrela';
+    else if(roi !== null && roi > 100)              st = 'oportunidade';
+    else if((margem||0) > 0 && (margem||0) < 10)   st = 'alerta';
+    else                                            st = 'volume';
+
+    products.push({
+      c:parseInt(cod), p:String(row[1]||'').trim(), f:currentFamily||'—',
+      tv, fat, lb:lucro, mg:margem, inv, roi, re, ei, ea, oferta,
+      lu, cm, md, de, dsv, st
+    });
   }
+
   // families
   const famMap = {};
   for(const p of products) {
@@ -503,8 +554,11 @@ function buildDashboard() {
   const famEl = document.getElementById('fam-list');
   famEl.innerHTML = F.map(f => {
     const pct = maxLucro > 0 ? Math.round(f.lucro_bruto/maxLucro*100) : 0;
-    const color = f.lucro_bruto > 10000 ? '#2d7a3a' : f.lucro_bruto > 4000 ? '#1a4f8a' : '#8a7200';
-    return `<div class="fam-row"><span class="fam-name">${f.familia}</span><div class="fam-track"><div class="fam-bar" style="width:${pct}%;background:${color}"></div></div><span class="fam-num">${fmtBRLk(f.lucro_bruto)}</span></div>`;
+    const color = f.lucro_bruto > 10000 ? '#2d7a3a' : f.lucro_bruto > 2000 ? '#1a4f8a' : f.lucro_bruto >= 0 ? '#8a7200' : '#b02020';
+    const barStyle = f.lucro_bruto >= 0 
+      ? `width:${pct}%;background:${color};left:0` 
+      : `width:${Math.abs(pct)}%;background:${color};right:0`;
+    return `<div class="fam-row"><span class="fam-name">${f.familia}</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="${barStyle}"></div></div><span class="fam-num" style="color:${f.lucro_bruto<0?'var(--red)':'inherit'}">${fmtBRLk(f.lucro_bruto)}</span></div>`;
   }).join('');
 
   // Signals
@@ -520,9 +574,9 @@ function buildDashboard() {
   const sigHtml = [
     {dot:'g', text:`${topF?.familia} é a família mais lucrativa da ação`, val:fmtBRLk(topF?.lucro_bruto), cls:'g'},
     {dot:'g', text:`Melhor produto: ${top?.p?.substring(0,40)}`, val: top ? fmtBRLk(top.lb) : '—', cls:'g'},
-    {dot:'g', text:`SALON LINE tem produtos com ROI alto sem desconto — potencial inexplorado`, val:'', cls:'g'},
-    {dot:'a', text:`${szvCount} produto${szvCount!==1?'s':''} não vendeu nada — ${Math.round(szvCount/P.length*100)}% do portfólio parado`, val:'revisar', cls:'a'},
-    {dot:'r', text:`${anomalias.length} anomalia${anomalias.length!==1?'s':''} de estoque (crescimento inesperado) — verificar no ERP`, val:'urgente', cls:'r'},
+    {dot:'g', text:`Produtos sem desconto aplicado venderam — potencial de redistribuir verba`, val:'', cls:'g'},
+    {dot:'a', text:`${szvCount} produto${szvCount!==1?'s':''} não vendeu${szvCount!==1?'ram':''} nada — ${Math.round(szvCount/P.length*100)}% do portfólio parado`, val:'revisar', cls:'a'},
+    ...(anomalias.length > 0 ? [{dot:'r', text:`${anomalias.length} anomalia${anomalias.length!==1?'s':''} de estoque (crescimento inesperado) — verificar no ERP`, val:'urgente', cls:'r'}] : [{dot:'a', text:'Nenhuma anomalia de estoque detectada nesta ação', val:'', cls:'a'}]),
     {dot:'a', text:`${worstF?.familia} tem o menor resultado relativo — reavaliar inclusão na próxima ação`, val:'', cls:'a'},
   ].map(s=>`<div class="signal"><div class="dot dot-${s.dot}"></div><div class="signal-body">${s.text}</div>${s.val?`<div class="signal-val ${s.cls}">${s.val}</div>`:''}</div>`).join('');
   document.getElementById('signal-list').innerHTML = sigHtml;
@@ -547,7 +601,7 @@ function buildDashboard() {
 }
 
 function buildFamChart() {
-  const F = G.families.slice(0,8);
+  const F = G.families;
   const labels = F.map(f=>f.familia.length>10?f.familia.substring(0,10)+'…':f.familia);
   const ctx = document.getElementById('chart-fam');
   if(famChart) famChart.destroy();
@@ -565,7 +619,8 @@ function buildFamChart() {
       plugins:{legend:{display:false}},
       scales:{
         x:{ticks:{font:{size:10},color:'#9a9a96'}, grid:{display:false}},
-        y:{ticks:{font:{size:10},color:'#9a9a96',callback:v=>'R$'+Math.round(v/1000)+'k'}, grid:{color:'rgba(0,0,0,0.05)'}}
+        y:{ticks:{font:{size:10},color:'#9a9a96',callback:v=>(v<0?'-':'')+'R$'+Math.round(Math.abs(v)/1000)+'k'}, grid:{color:'rgba(0,0,0,0.05)'},
+          afterDataLimits(scale){scale.min=Math.min(scale.min,0);}}
       }
     }
   });
@@ -592,6 +647,17 @@ function buildStatusChart() {
       plugins:{legend:{display:false}},
     }
   });
+  // Build legend
+  const legEl = document.createElement('div');
+  legEl.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px;color:var(--text2)';
+  const statColors = {estrela:'#1a4f8a',oportunidade:'#2d7a3a',volume:'#8a7200',alerta:'#d08000',critico:'#b02020',sem_venda:'#9a9a96',anomalia:'#cc4444'};
+  const statLabels = {estrela:'Estrela',oportunidade:'Oportunidade',volume:'Volume',alerta:'Alerta',critico:'Crítico',sem_venda:'Sem venda',anomalia:'Anomalia'};
+  const counts = {};
+  G.products.forEach(p=>counts[p.st]=(counts[p.st]||0)+1);
+  Object.entries(statColors).forEach(([k,c])=>{
+    if(counts[k]) legEl.innerHTML += `<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></span>${statLabels[k]} (${counts[k]})</span>`;
+  });
+  ctx.parentNode.appendChild(legEl);
 }
 
 function showRank(mode, btn) {
@@ -613,7 +679,7 @@ function showRank(mode, btn) {
     head = '<th>#</th><th>Produto</th><th>Família</th><th class="r">Faturamento</th><th class="r">Lucro</th><th class="r">Margem</th><th>Status</th>';
     renderRankTable(data, head, 'fat');
   } else if(mode==='roi') {
-    data = P.filter(p=>p.tv>0&&p.roi!==null&&p.inv>50).sort((a,b)=>b.roi-a.roi).slice(0,10);
+    data = P.filter(p=>p.tv>0&&p.roi!==null&&p.inv>10).sort((a,b)=>b.roi-a.roi).slice(0,10);
     head = '<th>#</th><th>Produto</th><th>Família</th><th class="r">ROI</th><th class="r">ROAS</th><th class="r">Lucro</th><th>Status</th>';
     renderRankTable(data, head, 'roi');
   } else if(mode==='giro') {
@@ -626,6 +692,7 @@ function showRank(mode, btn) {
 function renderRankTable(data, head, mode) {
   document.getElementById('rank-head').innerHTML = head;
   const b = document.getElementById('rank-body');
+  if(data.length === 0) { b.innerHTML = `<tr><td colspan='8' style='text-align:center;padding:24px;color:var(--text3);font-size:13px'>Nenhum produto encontrado para este critério</td></tr>`; return; }
   if(mode==='criticos') {
     b.innerHTML = data.map(p=>`<tr>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.p}</td>
@@ -677,9 +744,9 @@ function renderAllProducts() {
     <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.p}</td>
     <td style="color:var(--text2)">${p.f}</td>
     <td class="r">${fmtBRLk(p.fat)}</td>
-    <td class="r" style="color:${p.lb<0?'var(--red)':p.lb>5000?'var(--green)':'inherit'}">${fmtBRLk(p.lb)}</td>
+    <td class="r" style="color:${p.lb<0?'var(--red)':p.lb>500?'var(--green)':'inherit'}">${fmtBRLk(p.lb)}</td>
     <td class="r">${fmtPct(p.mg)}</td>
-    <td class="r" style="color:${p.roi!==null&&p.roi<0?'var(--red)':p.roi!==null&&p.roi>300?'var(--green)':'inherit'}">${fmtROI(p.roi)}</td>
+    <td class="r" style="color:${p.roi!==null&&p.roi<0?'var(--red)':p.roi!==null&&p.roi>50?'var(--green)':'inherit'}">${fmtROI(p.roi)}</td>
     <td class="r">${fmt(p.tv)}</td>
     <td><span class="badge badge-${p.st}">${statusLabel(p.st)}</span></td>
   </tr>`).join('');
