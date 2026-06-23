@@ -1,0 +1,2929 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Ações Comerciais</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:#f8f8f6;--surface:#ffffff;--surface2:#f2f1ee;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+    --text:#1a1a18;--text2:#6b6b67;--text3:#9a9a96;
+    --green:#2d7a3a;--green-bg:#eaf4ec;--green-border:#b6debb;
+    --red:#b02020;--red-bg:#fceaea;--red-border:#f0b8b8;
+    --amber:#8a5200;--amber-bg:#fdf0d8;--amber-border:#f5cc80;
+    --blue:#1a4f8a;--blue-bg:#e8f0fa;--blue-border:#aec8ef;
+    --radius:10px;--radius-sm:6px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{--bg:#141412;--surface:#1e1e1b;--surface2:#262622;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+    --text:#e8e8e4;--text2:#9a9a96;--text3:#6b6b67;--green:#4caa5e;--green-bg:#0d2e13;--green-border:#1e5428;
+    --red:#e05555;--red-bg:#2a0e0e;--red-border:#5a1e1e;--amber:#d4882a;--amber-bg:#281800;--amber-border:#5a3800;
+    --blue:#5b92d4;--blue-bg:#0c1e36;--blue-border:#1e3d6a;}
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
+  .topbar-brand{font-size:13px;font-weight:600}
+  .topbar-tag{font-size:11px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:99px;border:1px solid var(--border)}
+  .main{max-width:1100px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+  .section-label{font-size:11px;font-weight:600;letter-spacing:.07em;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem}
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1.5rem}
+  @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+  .kpi-label{font-size:11px;color:var(--text3);margin-bottom:5px}
+  .kpi-val{font-size:22px;font-weight:600;line-height:1}
+  .kpi-val.g{color:var(--green)}.kpi-val.b{color:var(--blue)}.kpi-val.r{color:var(--red)}
+  .kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem}
+  @media(max-width:700px){.grid-2,.grid-3{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+  .card-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+  .fam-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .fam-name{font-size:12px;width:95px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fam-track{flex:1;height:5px;background:var(--surface2);border-radius:3px;position:relative}
+  .fam-bar{height:5px;border-radius:3px;position:absolute;top:0}
+  .fam-num{font-size:11px;color:var(--text2);width:52px;text-align:right;flex-shrink:0}
+  .signal{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+  .signal:last-child{border-bottom:none}
+  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+  .dot-g{background:var(--green)}.dot-r{background:var(--red)}.dot-a{background:#d08000}
+  .signal-body{flex:1;font-size:12px;line-height:1.45}
+  .signal-val{font-size:12px;font-weight:600;flex-shrink:0;margin-left:6px;white-space:nowrap}
+  .signal-val.g{color:var(--green)}.signal-val.r{color:var(--red)}.signal-val.a{color:var(--amber)}
+  .prod-table{width:100%;border-collapse:collapse;font-size:12px}
+  .prod-table th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:0 8px 8px;text-align:left;white-space:nowrap}
+  .prod-table th.r,.prod-table td.r{text-align:right}
+  .prod-table td{padding:7px 8px;border-top:1px solid var(--border);color:var(--text);vertical-align:middle}
+  .prod-table tr:hover td{background:var(--surface2)}
+  .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
+  .badge-estrela{background:var(--blue-bg);color:var(--blue)}
+  .badge-oportunidade{background:var(--green-bg);color:var(--green)}
+  .badge-volume{background:var(--amber-bg);color:var(--amber)}
+  .badge-alerta{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+  .badge-critico{background:var(--red-bg);color:var(--red)}
+  .badge-anomalia{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+  .badge-sem_venda{background:var(--surface2);color:var(--text3)}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{font-size:12px;padding:5px 12px;border-radius:99px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2)}
+  .tab:hover{background:var(--surface2)}
+  .tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .dec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:500px){.dec-grid{grid-template-columns:1fr}}
+  .dec{border-radius:var(--radius-sm);padding:12px 14px}
+  .dec.g{background:var(--green-bg);border:1px solid var(--green-border)}
+  .dec.r{background:var(--red-bg);border:1px solid var(--red-border)}
+  .dec.b{background:var(--blue-bg);border:1px solid var(--blue-border)}
+  .dec.a{background:var(--amber-bg);border:1px solid var(--amber-border)}
+  .dec-title{font-size:11px;font-weight:700;margin-bottom:6px;letter-spacing:.03em}
+  .dec.g .dec-title{color:var(--green)}.dec.r .dec-title{color:var(--red)}
+  .dec.b .dec-title{color:var(--blue)}.dec.a .dec-title{color:var(--amber)}
+  .dec-body{font-size:11px;line-height:1.7;color:var(--text2)}
+  .alert{border-radius:var(--radius-sm);padding:9px 12px;font-size:12px;display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .alert:last-child{margin-bottom:0}
+  .alert.r{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+  .alert.a{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+  .alert svg{flex-shrink:0;margin-top:1px}
+  .search-wrap{position:relative;margin-bottom:12px}
+  .search-input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;outline:none}
+  .search-input:focus{border-color:var(--blue)}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+  .filter-sel{font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);cursor:pointer;outline:none;margin-right:8px;margin-bottom:8px}
+  .chart-wrap{position:relative;width:100%}
+  .hidden{display:none}
+  .footer{text-align:center;font-size:11px;color:var(--text3);margin-top:3rem;padding:1rem}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="topbar-brand">Dashboard Comercial</div>
+    <div class="topbar-tag">15 famílias · 207 produtos</div>
+  </div>
+</div>
+
+<div class="main">
+  <div style="margin-bottom:.5rem;margin-top:1rem" class="section-label">visão geral</div>
+  <div class="kpi-grid">
+<div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-val">R$ 332.3k</div><div class="kpi-sub">total da ação</div></div>
+<div class="kpi"><div class="kpi-label">Lucro bruto</div><div class="kpi-val g">R$ 23.4k</div><div class="kpi-sub">margem 7.0%</div></div>
+<div class="kpi"><div class="kpi-label">Investimento</div><div class="kpi-val">R$ 24.9k</div><div class="kpi-sub">em descontos</div></div>
+<div class="kpi"><div class="kpi-label">ROI geral</div><div class="kpi-val r">-6%</div><div class="kpi-sub">retorno s/ investimento</div></div>
+<div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-val b">13.3x</div><div class="kpi-sub">faturamento / real gasto</div></div>
+<div class="kpi"><div class="kpi-label">Sem venda</div><div class="kpi-val r">27</div><div class="kpi-sub">de 207 produtos</div></div>
+</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">lucro por família</div>
+      <div class="fam-row"><span class="fam-name">COTY</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:100%;background:#1a4f8a;left:0"></div></div><span class="fam-num" style="">R$ 4.6k</span></div>
+<div class="fam-row"><span class="fam-name">SOFTYS</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:59%;background:#1a4f8a;left:0"></div></div><span class="fam-num" style="">R$ 2.7k</span></div>
+<div class="fam-row"><span class="fam-name">SKALA</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:56%;background:#1a4f8a;left:0"></div></div><span class="fam-num" style="">R$ 2.6k</span></div>
+<div class="fam-row"><span class="fam-name">WELLA</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:50%;background:#1a4f8a;left:0"></div></div><span class="fam-num" style="">R$ 2.3k</span></div>
+<div class="fam-row"><span class="fam-name">SALON LINE</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:44%;background:#1a4f8a;left:0"></div></div><span class="fam-num" style="">R$ 2.0k</span></div>
+<div class="fam-row"><span class="fam-name">QUIMICA AMPARO</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:39%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 1.8k</span></div>
+<div class="fam-row"><span class="fam-name">ENERGIZER</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:38%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 1.7k</span></div>
+<div class="fam-row"><span class="fam-name">CRUSOE</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:36%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 1.7k</span></div>
+<div class="fam-row"><span class="fam-name">FALCON</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:36%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 1.7k</span></div>
+<div class="fam-row"><span class="fam-name">NEUTERRA</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:15%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 694</span></div>
+<div class="fam-row"><span class="fam-name">TREVO</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:13%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 583</span></div>
+<div class="fam-row"><span class="fam-name">CARGILL</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:12%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 534</span></div>
+<div class="fam-row"><span class="fam-name">BIC</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:8%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 347</span></div>
+<div class="fam-row"><span class="fam-name">PRO NOVA</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:3%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 149</span></div>
+<div class="fam-row"><span class="fam-name">MARATA</span><div class="fam-track" style="position:relative"><div class="fam-bar" style="width:0%;background:#8a7200;left:0"></div></div><span class="fam-num" style="">R$ 0</span></div>
+
+    </div>
+    <div class="card">
+      <div class="card-title">sinais para decisão</div>
+      
+<div class="signal"><div class="dot dot-g"></div><div class="signal-body">COTY é a família mais lucrativa da ação</div><div class="signal-val g">R$ 4.6k</div></div>
+<div class="signal"><div class="dot dot-g"></div><div class="signal-body">Melhor produto: OLEO CORP PAIXAO 100ML</div><div class="signal-val g">R$ 1.9k</div></div>
+<div class="signal"><div class="dot dot-r"></div><div class="signal-body">35 anomalias de estoque (crescimento inesperado) — verificar no ERP</div><div class="signal-val r">urgente</div></div>
+<div class="signal"><div class="dot dot-a"></div><div class="signal-body">27 produtos não vendeuram nada — 13% do portfólio parado</div><div class="signal-val a">revisar</div></div>
+<div class="signal"><div class="dot dot-a"></div><div class="signal-body">MARATA tem o menor resultado relativo — reavaliar inclusão na próxima ação</div><div class="signal-val"></div></div>
+
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">faturamento vs lucro — famílias</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-fam" role="img" aria-label="Faturamento e lucro por família"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">distribuição por status</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chart-status" role="img" aria-label="Distribuição de produtos por status"></canvas></div>
+      <div id="status-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px;color:var(--text2)"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title">rankings de produtos</div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('lucro',this)">Por lucro</button>
+      <button class="tab" onclick="showTab('fat',this)">Por faturamento</button>
+      <button class="tab" onclick="showTab('roi',this)">Por ROI</button>
+      <button class="tab" onclick="showTab('giro',this)">Por giro</button>
+      <button class="tab" onclick="showTab('crit',this)">Críticos</button>
+    </div>
+    <div style="overflow-x:auto">
+      <div id="tab-lucro">
+        <table class="prod-table"><thead><tr><th>#</th><th>Produto</th><th>Família</th><th class="r">Lucro</th><th class="r">Faturamento</th><th class="r">Margem</th><th class="r">ROI</th><th>Status</th></tr></thead>
+        <tbody><tr><td style="color:var(--text3);font-size:11px">1</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 100ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 1.9k</td>
+    <td class="r">R$ 21.0k</td>
+    <td class="r" style="">9.0%</td>
+    <td class="r">65%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">2</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA SHORTINHO MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 1.7k</td>
+    <td class="r">R$ 21.0k</td>
+    <td class="r" style="">8.2%</td>
+    <td class="r">75%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">3</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT KOLESTON</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 1.6k</td>
+    <td class="r">R$ 20.4k</td>
+    <td class="r" style="">8.0%</td>
+    <td class="r">-2%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">4</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA #MAIS CACHOS 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 1.5k</td>
+    <td class="r">R$ 20.4k</td>
+    <td class="r" style="">7.2%</td>
+    <td class="r">24%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">5</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 1.3k</td>
+    <td class="r">R$ 18.7k</td>
+    <td class="r" style="">7.0%</td>
+    <td class="r">47%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">6</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBINHO</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 986</td>
+    <td class="r">R$ 20.0k</td>
+    <td class="r" style="color:var(--red)">4.9%</td>
+    <td class="r">15%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">7</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 890</td>
+    <td class="r">R$ 13.9k</td>
+    <td class="r" style="">6.4%</td>
+    <td class="r">-2%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">8</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 701</td>
+    <td class="r">R$ 10.9k</td>
+    <td class="r" style="">6.4%</td>
+    <td class="r">-2%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">9</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH LV800PG720G</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 696</td>
+    <td class="r">R$ 4.7k</td>
+    <td class="r" style="">14.8%</td>
+    <td class="r">108%</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">10</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC PREM SHORTINHO MEGA IMP</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r" style="color:var(--green);font-weight:500">R$ 636</td>
+    <td class="r">R$ 7.3k</td>
+    <td class="r" style="">8.7%</td>
+    <td class="r">36%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr></tbody></table>
+      </div>
+      <div id="tab-fat" class="hidden">
+        <table class="prod-table"><thead><tr><th>#</th><th>Produto</th><th>Família</th><th class="r">Faturamento</th><th class="r">Lucro</th><th class="r">Margem</th><th>Status</th></tr></thead>
+        <tbody><tr><td style="color:var(--text3);font-size:11px">1</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER HIPER</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r" style="font-weight:500">R$ 22.9k</td>
+    <td class="r" style="color:var(--green)">R$ 0</td>
+    <td class="r">—</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">2</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO ADULTOS ORIGINALE 5KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r" style="font-weight:500">R$ 21.2k</td>
+    <td class="r" style="color:var(--green)">R$ 552</td>
+    <td class="r">2.6%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">3</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 100ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">R$ 21.0k</td>
+    <td class="r" style="color:var(--green)">R$ 1.9k</td>
+    <td class="r">9.0%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">4</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA SHORTINHO MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r" style="font-weight:500">R$ 21.0k</td>
+    <td class="r" style="color:var(--green)">R$ 1.7k</td>
+    <td class="r">8.2%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">5</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT KOLESTON</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r" style="font-weight:500">R$ 20.4k</td>
+    <td class="r" style="color:var(--green)">R$ 1.6k</td>
+    <td class="r">8.0%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">6</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA #MAIS CACHOS 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r" style="font-weight:500">R$ 20.4k</td>
+    <td class="r" style="color:var(--green)">R$ 1.5k</td>
+    <td class="r">7.2%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">7</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBINHO</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r" style="font-weight:500">R$ 20.0k</td>
+    <td class="r" style="color:var(--green)">R$ 986</td>
+    <td class="r">4.9%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">8</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">R$ 18.7k</td>
+    <td class="r" style="color:var(--green)">R$ 1.3k</td>
+    <td class="r">7.0%</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr><td style="color:var(--text3);font-size:11px">9</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA MONANGE 150ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">R$ 14.7k</td>
+    <td class="r" style="color:var(--green)">R$ 284</td>
+    <td class="r">1.9%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr><td style="color:var(--text3);font-size:11px">10</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r" style="font-weight:500">R$ 13.9k</td>
+    <td class="r" style="color:var(--green)">R$ 890</td>
+    <td class="r">6.4%</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr></tbody></table>
+      </div>
+      <div id="tab-roi" class="hidden">
+        <table class="prod-table"><thead><tr><th>#</th><th>Produto</th><th>Família</th><th class="r">ROI</th><th class="r">ROAS</th><th class="r">Lucro</th><th>Status</th></tr></thead>
+        <tbody><tr><td style="color:var(--text3);font-size:11px">1</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBO.</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r" style="color:var(--green);font-weight:500">1051%</td>
+    <td class="r">80.7x</td>
+    <td class="r" style="color:var(--green)">R$ 542</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">2</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SALON LINE SH300ML+CO200ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r" style="color:var(--green);font-weight:500">613%</td>
+    <td class="r">53.1x</td>
+    <td class="r" style="color:var(--green)">R$ 80</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">3</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SALON LINE 50ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r" style="color:var(--green);font-weight:500">560%</td>
+    <td class="r">49.6x</td>
+    <td class="r" style="color:var(--green)">R$ 201</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">4</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO SALON LINE BOOSTER120ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r" style="color:var(--green);font-weight:500">296%</td>
+    <td class="r">32.5x</td>
+    <td class="r" style="color:var(--green)">R$ 88</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">5</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LAMINA BARB BIC DUPLO FIO</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r" style="color:var(--green);font-weight:500">231%</td>
+    <td class="r">22.8x</td>
+    <td class="r" style="color:var(--green)">R$ 231</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">6</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SALON LINE 1KG CACHOS SONHOS 3X1</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r" style="color:var(--green);font-weight:500">229%</td>
+    <td class="r">28.0x</td>
+    <td class="r" style="color:var(--green)">R$ 295</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">7</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SALON LINE SH+CT MULTY</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r" style="color:var(--green);font-weight:500">213%</td>
+    <td class="r">27.0x</td>
+    <td class="r" style="color:var(--green)">R$ 59</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">8</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AA L6P4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r" style="color:var(--green);font-weight:500">209%</td>
+    <td class="r">16.3x</td>
+    <td class="r" style="color:var(--green)">R$ 263</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">9</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SKALA 90ML 5X1</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r" style="color:var(--green);font-weight:500">207%</td>
+    <td class="r">22.0x</td>
+    <td class="r" style="color:var(--green)">R$ 49</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr><td style="color:var(--text3);font-size:11px">10</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH LV4PG3,6KG</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r" style="color:var(--green);font-weight:500">173%</td>
+    <td class="r">18.5x</td>
+    <td class="r" style="color:var(--green)">R$ 485</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr></tbody></table>
+      </div>
+      <div id="tab-giro" class="hidden">
+        <table class="prod-table"><thead><tr><th>#</th><th>Produto</th><th>Família</th><th class="r">Qtd vendida</th><th class="r">Red. estoque</th><th class="r">Margem</th><th class="r">Lucro</th></tr></thead>
+        <tbody><tr><td style="color:var(--text3);font-size:11px">1</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r" style="font-weight:500">2,780 un</td>
+    <td class="r">8.4%</td>
+    <td class="r">6.4%</td>
+    <td class="r" style="color:var(--green)">R$ 890</td></tr><tr><td style="color:var(--text3);font-size:11px">2</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MOLHO TOM POMODORO 300G</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r" style="font-weight:500">2,507 un</td>
+    <td class="r">6.7%</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="color:var(--green)">R$ 326</td></tr><tr><td style="color:var(--text3);font-size:11px">3</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 100ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">2,420 un</td>
+    <td class="r">28.5%</td>
+    <td class="r">9.0%</td>
+    <td class="r" style="color:var(--green)">R$ 1.9k</td></tr><tr><td style="color:var(--text3);font-size:11px">4</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r" style="font-weight:500">2,190 un</td>
+    <td class="r">5.9%</td>
+    <td class="r">6.4%</td>
+    <td class="r" style="color:var(--green)">R$ 701</td></tr><tr><td style="color:var(--text3);font-size:11px">5</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA MONANGE 150ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">2,013 un</td>
+    <td class="r">6.9%</td>
+    <td class="r">1.9%</td>
+    <td class="r" style="color:var(--green)">R$ 284</td></tr><tr><td style="color:var(--text3);font-size:11px">6</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA #MAIS CACHOS 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r" style="font-weight:500">1,979 un</td>
+    <td class="r">21.2%</td>
+    <td class="r">7.2%</td>
+    <td class="r" style="color:var(--green)">R$ 1.5k</td></tr><tr><td style="color:var(--text3);font-size:11px">7</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r" style="font-weight:500">1,223 un</td>
+    <td class="r">19.3%</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="color:var(--green)">R$ 1.3k</td></tr><tr><td style="color:var(--text3);font-size:11px">8</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT KOLESTON</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r" style="font-weight:500">1,133 un</td>
+    <td class="r">15.7%</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="color:var(--green)">R$ 1.6k</td></tr><tr><td style="color:var(--text3);font-size:11px">9</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO ADULTOS ORIGINALE 5KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r" style="font-weight:500">1,062 un</td>
+    <td class="r">23.7%</td>
+    <td class="r">2.6%</td>
+    <td class="r" style="color:var(--green)">R$ 552</td></tr><tr><td style="color:var(--text3);font-size:11px">10</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBINHO</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r" style="font-weight:500">1,060 un</td>
+    <td class="r">22.0%</td>
+    <td class="r">4.9%</td>
+    <td class="r" style="color:var(--green)">R$ 986</td></tr></tbody></table>
+      </div>
+      <div id="tab-crit" class="hidden">
+        <table class="prod-table"><thead><tr><th>Produto</th><th>Família</th><th class="r">Faturamento</th><th class="r">Lucro</th><th class="r">ROI</th><th class="r">Vendas</th><th>Status</th></tr></thead>
+        <tbody><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-2,190</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA HIPER</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-1,003</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST LIQ MONANGE 240ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-646</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GEL FIX NYLOOKS 240G</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-332</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA BOZZANO 150ML THERMO</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-742</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CO MONANGE 325ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-298</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST VEG GIOVANNA BABY 90G</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-7,600</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML FEM 72H</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-2,620</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">BODY SPLASH GIOVANNA BABY 260ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-4,182</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DC GIOVANNA BABY 55G</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-3,553</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML FEM</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-2,068</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DC GIOVANNA BABY 60G BISNAGA</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-658</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GB 200ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-240</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ALCOOL GEL GIOVANNA BABY 500ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-201</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID GIOVANNA BABY 200ML CHERRY</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="color:inherit">R$ 0</td>
+    <td class="r" style="color:var(--amber)">—</td>
+    <td class="r">-4</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title">decisões recomendadas</div>
+    <div class="dec-grid">
+<div class="dec g"><div class="dec-title">AMPLIAR INVESTIMENTO</div><div class="dec-body">Famílias de melhor retorno: COTY, SOFTYS, SKALA<br>Produtos com ROI acima de 100% devem ter desconto ampliado<br>Famílias com margem acima de 10% têm espaço para crescer</div></div>
+<div class="dec r"><div class="dec-title">CORTAR OU REESTRUTURAR</div><div class="dec-body">Menor retorno relativo: MARATA, PRO NOVA<br>27 produtos sem nenhuma venda — remover da próxima ação<br>Produtos com ROI negativo: eliminar imediatamente</div></div>
+<div class="dec b"><div class="dec-title">OPORTUNIDADES</div><div class="dec-body">Produtos com alto giro e margem positiva — aumentar estoque<br>Famílias com Contrib. Marg% acima da média da ação<br>Produtos com Dias de Estoque abaixo de 30 — risco de ruptura</div></div>
+<div class="dec a"><div class="dec-title">RISCOS A MONITORAR</div><div class="dec-body">⚠ 35 anomalias de estoque — verificar NF e devoluções<br>Produtos com Dias sem Venda acima de 30 podem virar obsolescência<br>Concentração de resultado em poucas famílias é risco estrutural</div></div>
+</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title">todos os produtos</div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="search" placeholder="Buscar produto ou família..." oninput="filterProducts()">
+    </div>
+    <div>
+      <select class="filter-sel" id="filter-fam" onchange="filterProducts()"><option value="">Todas as famílias</option><option value="COTY">COTY</option><option value="SOFTYS">SOFTYS</option><option value="SKALA">SKALA</option><option value="WELLA">WELLA</option><option value="SALON LINE">SALON LINE</option><option value="QUIMICA AMPARO">QUIMICA AMPARO</option><option value="ENERGIZER">ENERGIZER</option><option value="CRUSOE">CRUSOE</option><option value="FALCON">FALCON</option><option value="NEUTERRA">NEUTERRA</option><option value="TREVO">TREVO</option><option value="CARGILL">CARGILL</option><option value="BIC">BIC</option><option value="PRO NOVA">PRO NOVA</option><option value="MARATA">MARATA</option></select>
+      <select class="filter-sel" id="filter-st" onchange="filterProducts()">
+        <option value="">Todos os status</option>
+        <option value="estrela">Estrela</option><option value="oportunidade">Oportunidade</option>
+        <option value="volume">Volume</option><option value="alerta">Alerta</option>
+        <option value="critico">Crítico</option><option value="sem_venda">Sem venda</option>
+        <option value="anomalia">Anomalia</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="prod-table">
+        <thead><tr><th>Produto</th><th>Família</th><th class="r">Faturamento</th><th class="r">Lucro</th><th class="r">Margem</th><th class="r">ROI</th><th class="r">Vendas</th><th class="r">Méd/dia</th><th class="r">Dias Est.</th><th class="r">Dias s/Vd</th><th>Status</th></tr></thead>
+        <tbody id="all-body"><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="volume" data-name="la aco assolan 45g 8un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LA ACO ASSOLAN 45G 8UN</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 131</td>
+    <td class="r" style="">R$ 20</td>
+    <td class="r">15.1%</td>
+    <td class="r" style="color:var(--green)">52%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">14.9</td>
+    <td class="r" style="color:var(--red)">711d</td>
+    <td class="r" style="">7d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="dt po tixan ype sh lv800pg720g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH LV800PG720G</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 4.7k</td>
+    <td class="r" style="color:var(--green)">R$ 696</td>
+    <td class="r">14.8%</td>
+    <td class="r" style="color:var(--green)">108%</td>
+    <td class="r">480</td>
+    <td class="r" style="color:var(--text2)">17.1</td>
+    <td class="r" style="color:var(--amber)">272d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="volume" data-name="dt po tixan ype sh 800g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH 800G</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 400</td>
+    <td class="r" style="">R$ 59</td>
+    <td class="r">14.8%</td>
+    <td class="r" style="">19%</td>
+    <td class="r">40</td>
+    <td class="r" style="color:var(--text2)">2.2</td>
+    <td class="r" style="color:var(--red)">819d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="volume" data-name="dt po tixan ype sh 4kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH 4KG</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 2.3k</td>
+    <td class="r" style="">R$ 340</td>
+    <td class="r">14.8%</td>
+    <td class="r" style="color:var(--green)">66%</td>
+    <td class="r">56</td>
+    <td class="r" style="color:var(--text2)">18.1</td>
+    <td class="r" style="">55d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="amac ype 500ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AMAC YPE 500ML</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 96</td>
+    <td class="r" style="">R$ 14</td>
+    <td class="r">14.8%</td>
+    <td class="r" style="color:var(--green)">195%</td>
+    <td class="r">24</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--red)">594d</td>
+    <td class="r" style="">7d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="dt po tixan ype sh lv4pg3,6kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DT PO TIXAN YPE SH LV4PG3,6KG</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 3.3k</td>
+    <td class="r" style="">R$ 485</td>
+    <td class="r">14.8%</td>
+    <td class="r" style="color:var(--green)">173%</td>
+    <td class="r">84</td>
+    <td class="r" style="color:var(--text2)">4.8</td>
+    <td class="r" style="color:var(--amber)">115d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="critico" data-name="st liq flor ype 250ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST LIQ FLOR YPE 250ML</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 843</td>
+    <td class="r" style="">R$ 49</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="color:var(--red)">-9%</td>
+    <td class="r">96</td>
+    <td class="r" style="color:var(--text2)">0.3</td>
+    <td class="r" style="color:var(--red)">805d</td>
+    <td class="r" style="color:var(--amber)">26d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="amac ype conc 1,5l">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AMAC YPE CONC 1,5L</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 610</td>
+    <td class="r" style="">R$ 100</td>
+    <td class="r">16.4%</td>
+    <td class="r" style="color:var(--green)">158%</td>
+    <td class="r">27</td>
+    <td class="r" style="color:var(--text2)">0.5</td>
+    <td class="r" style="color:var(--amber)">342d</td>
+    <td class="r" style="color:var(--red)">39d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="limp ype lpes 500ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LIMP YPE LPES 500ML</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 53</td>
+    <td class="r" style="">R$ 9</td>
+    <td class="r">16.4%</td>
+    <td class="r" style="color:var(--green)">158%</td>
+    <td class="r">8</td>
+    <td class="r" style="color:var(--text2)">0.0</td>
+    <td class="r" style="color:var(--red)">2909d</td>
+    <td class="r" style="color:var(--red)">54d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="oportunidade" data-name="amac ype conc 1,5l pink">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AMAC YPE CONC 1,5L PINK</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 216</td>
+    <td class="r" style="">R$ 36</td>
+    <td class="r">16.6%</td>
+    <td class="r" style="color:var(--green)">162%</td>
+    <td class="r">9</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">990d</td>
+    <td class="r" style="color:var(--red)">67d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="sem_venda" data-name="desinf ype bak 500ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DESINF YPE BAK 500ML</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">13.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">1.1</td>
+    <td class="r" style="">67d</td>
+    <td class="r" style="color:var(--red)">54d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="QUIMICA AMPARO" data-st="critico" data-name="amac ype conc ref 900ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AMAC YPE CONC REF 900ML</td>
+    <td style="color:var(--text2);font-size:11px">QUIMICA AMPARO</td>
+    <td class="r">R$ 184</td>
+    <td class="r" style="">R$ 4</td>
+    <td class="r">2.2%</td>
+    <td class="r" style="color:var(--red)">-63%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">245d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="critico" data-name="cp salon line 1lt/1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CP SALON LINE 1LT/1KG</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 1.2k</td>
+    <td class="r" style="">R$ 82</td>
+    <td class="r">6.9%</td>
+    <td class="r" style="color:var(--red)">-37%</td>
+    <td class="r">41</td>
+    <td class="r" style="color:var(--text2)">34.4</td>
+    <td class="r" style="">37d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="ct salon line 1kg cachos sonhos 3x1">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SALON LINE 1KG CACHOS SONHOS 3X1</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 2.5k</td>
+    <td class="r" style="">R$ 295</td>
+    <td class="r">11.7%</td>
+    <td class="r" style="color:var(--green)">229%</td>
+    <td class="r">93</td>
+    <td class="r" style="color:var(--text2)">3.2</td>
+    <td class="r" style="color:var(--amber)">311d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="gelat cap inf salon line 400g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELAT CAP INF SALON LINE 400G</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 273</td>
+    <td class="r" style="">R$ 25</td>
+    <td class="r">9.3%</td>
+    <td class="r" style="color:var(--green)">53%</td>
+    <td class="r">15</td>
+    <td class="r" style="color:var(--text2)">2.3</td>
+    <td class="r" style="color:var(--amber)">332d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="oleo cap salon line 50ml cachos">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SALON LINE 50ML CACHOS</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 1.2k</td>
+    <td class="r" style="">R$ 104</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">32%</td>
+    <td class="r">78</td>
+    <td class="r" style="color:var(--text2)">7.5</td>
+    <td class="r" style="color:var(--amber)">98d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="oleo cap salon line 50ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SALON LINE 50ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 1.5k</td>
+    <td class="r" style="">R$ 201</td>
+    <td class="r">13.3%</td>
+    <td class="r" style="color:var(--green)">560%</td>
+    <td class="r">91</td>
+    <td class="r" style="color:var(--text2)">9.3</td>
+    <td class="r" style="">67d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="kit salon sh300ml+co200ml meu liso">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT SALON SH300ML+CO200ML MEU LISO</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 1.2k</td>
+    <td class="r" style="">R$ 100</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="">11%</td>
+    <td class="r">52</td>
+    <td class="r" style="color:var(--text2)">5.9</td>
+    <td class="r" style="color:var(--amber)">99d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="cp salon line 800g xerosa">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CP SALON LINE 800G XEROSA</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 1.5k</td>
+    <td class="r" style="">R$ 133</td>
+    <td class="r">9.1%</td>
+    <td class="r" style="">47%</td>
+    <td class="r">49</td>
+    <td class="r" style="color:var(--text2)">5.3</td>
+    <td class="r" style="color:var(--amber)">113d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="kit cap salon line sh+co xerosa">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SALON LINE SH+CO XEROSA</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 528</td>
+    <td class="r" style="">R$ 41</td>
+    <td class="r">7.8%</td>
+    <td class="r" style="">4%</td>
+    <td class="r">22</td>
+    <td class="r" style="color:var(--text2)">4.1</td>
+    <td class="r" style="color:var(--amber)">132d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="gelat salon line 550g #todecacho">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELAT SALON LINE 550G #TODECACHO</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 362</td>
+    <td class="r" style="">R$ 56</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">15</td>
+    <td class="r" style="color:var(--text2)">1.4</td>
+    <td class="r" style="color:var(--amber)">359d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="cr alis salon line 500g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CR ALIS SALON LINE 500G</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 172</td>
+    <td class="r" style="">R$ 22</td>
+    <td class="r">13.0%</td>
+    <td class="r" style="color:var(--green)">475%</td>
+    <td class="r">4</td>
+    <td class="r" style="color:var(--text2)">1.7</td>
+    <td class="r" style="color:var(--amber)">268d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="sem_venda" data-name="cp salon line 1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CP SALON LINE 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">12.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">3.0</td>
+    <td class="r" style="color:var(--amber)">148d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="oleo cap salon line 100ml sos cach">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SALON LINE 100ML SOS CACH</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 180</td>
+    <td class="r" style="">R$ 23</td>
+    <td class="r">13.0%</td>
+    <td class="r" style="color:var(--green)">474%</td>
+    <td class="r">6</td>
+    <td class="r" style="color:var(--text2)">3.7</td>
+    <td class="r" style="color:var(--amber)">111d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="critico" data-name="cp salon line kids 1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CP SALON LINE KIDS 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 2.4k</td>
+    <td class="r" style="">R$ 186</td>
+    <td class="r">7.6%</td>
+    <td class="r" style="color:var(--red)">-1%</td>
+    <td class="r">79</td>
+    <td class="r" style="color:var(--text2)">5.1</td>
+    <td class="r" style="">84d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="serum cap salon line 200ml multy">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SERUM CAP SALON LINE 200ML MULTY</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 310</td>
+    <td class="r" style="">R$ 47</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">10</td>
+    <td class="r" style="color:var(--text2)">2.1</td>
+    <td class="r" style="color:var(--amber)">192d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="gelat inf salon line 550g #todecach">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELAT INF SALON LINE 550G #TODECACH</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 217</td>
+    <td class="r" style="">R$ 33</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">9</td>
+    <td class="r" style="color:var(--text2)">2.0</td>
+    <td class="r" style="color:var(--amber)">203d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="critico" data-name="cera cap salon line 60g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CERA CAP SALON LINE 60G</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 487</td>
+    <td class="r" style="">R$ 30</td>
+    <td class="r">6.2%</td>
+    <td class="r" style="color:var(--red)">-32%</td>
+    <td class="r">42</td>
+    <td class="r" style="color:var(--text2)">2.4</td>
+    <td class="r" style="color:var(--amber)">162d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="gelacola salon line 500g #todecacho">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELACOLA SALON LINE 500G #TODECACHO</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 116</td>
+    <td class="r" style="">R$ 15</td>
+    <td class="r">12.9%</td>
+    <td class="r" style="color:var(--green)">432%</td>
+    <td class="r">5</td>
+    <td class="r" style="color:var(--text2)">0.9</td>
+    <td class="r" style="color:var(--red)">400d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="mod salon line 120g #todecach">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MOD SALON LINE 120G #TODECACH</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 45</td>
+    <td class="r" style="">R$ 6</td>
+    <td class="r">12.5%</td>
+    <td class="r" style="color:var(--green)">342%</td>
+    <td class="r">3</td>
+    <td class="r" style="color:var(--text2)">0.8</td>
+    <td class="r" style="color:var(--red)">455d</td>
+    <td class="r" style="color:var(--amber)">11d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="gelat cap salon line #todecach 500g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELAT CAP SALON LINE #TODECACH 500G</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 311</td>
+    <td class="r" style="">R$ 48</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">13</td>
+    <td class="r" style="color:var(--text2)">1.4</td>
+    <td class="r" style="color:var(--amber)">262d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="kit cap salon line sh+ct multy">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SALON LINE SH+CT MULTY</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 509</td>
+    <td class="r" style="">R$ 59</td>
+    <td class="r">11.6%</td>
+    <td class="r" style="color:var(--green)">213%</td>
+    <td class="r">21</td>
+    <td class="r" style="color:var(--text2)">2.7</td>
+    <td class="r" style="color:var(--amber)">107d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="serum cap salon line 120ml meu liso">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SERUM CAP SALON LINE 120ML MEU LISO</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 120</td>
+    <td class="r" style="">R$ 18</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">5</td>
+    <td class="r" style="color:var(--text2)">0.7</td>
+    <td class="r" style="color:var(--red)">394d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="kit inf salon line sh300ml+co200ml.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT INF SALON LINE SH300ML+CO200ML.</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 361</td>
+    <td class="r" style="">R$ 45</td>
+    <td class="r">12.6%</td>
+    <td class="r" style="color:var(--green)">365%</td>
+    <td class="r">15</td>
+    <td class="r" style="color:var(--text2)">3.4</td>
+    <td class="r" style="">79d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="bomba masc original 1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">BOMBA MASC ORIGINAL 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 222</td>
+    <td class="r" style="">R$ 30</td>
+    <td class="r">13.4%</td>
+    <td class="r" style="color:var(--green)">604%</td>
+    <td class="r">6</td>
+    <td class="r" style="color:var(--text2)">0.9</td>
+    <td class="r" style="color:var(--amber)">278d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="critico" data-name="kit inf salon line sh300ml+co200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT INF SALON LINE SH300ML+CO200ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 329</td>
+    <td class="r" style="">R$ 24</td>
+    <td class="r">7.2%</td>
+    <td class="r" style="color:var(--red)">-10%</td>
+    <td class="r">17</td>
+    <td class="r" style="color:var(--text2)">3.7</td>
+    <td class="r" style="">74d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="kit cap salon line sh300ml+co200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SALON LINE SH300ML+CO200ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 599</td>
+    <td class="r" style="">R$ 80</td>
+    <td class="r">13.4%</td>
+    <td class="r" style="color:var(--green)">613%</td>
+    <td class="r">24</td>
+    <td class="r" style="color:var(--text2)">4.2</td>
+    <td class="r" style="">62d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="gelat cap salon line 200g #todecach">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GELAT CAP SALON LINE 200G #TODECACH</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 260</td>
+    <td class="r" style="">R$ 35</td>
+    <td class="r">13.5%</td>
+    <td class="r" style="color:var(--green)">649%</td>
+    <td class="r">20</td>
+    <td class="r" style="color:var(--text2)">3.2</td>
+    <td class="r" style="">76d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="oleo cap perf salon line 120ml cach">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP PERF SALON LINE 120ML CACH</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 536</td>
+    <td class="r" style="">R$ 82</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">22</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--amber)">173d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="oleo salon line booster120ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO SALON LINE BOOSTER120ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 726</td>
+    <td class="r" style="">R$ 88</td>
+    <td class="r">12.2%</td>
+    <td class="r" style="color:var(--green)">296%</td>
+    <td class="r">22</td>
+    <td class="r" style="color:var(--text2)">2.9</td>
+    <td class="r" style="">78d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="volume" data-name="serum cap salon line 200ml xerosa">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SERUM CAP SALON LINE 200ML XEROSA</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 248</td>
+    <td class="r" style="">R$ 38</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">8</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--amber)">165d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="oportunidade" data-name="sh inf salon line 300ml sos kids">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SH INF SALON LINE 300ML SOS KIDS</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 88</td>
+    <td class="r" style="">R$ 12</td>
+    <td class="r">13.8%</td>
+    <td class="r" style="color:var(--green)">796%</td>
+    <td class="r">5</td>
+    <td class="r" style="color:var(--text2)">1.5</td>
+    <td class="r" style="color:var(--amber)">138d</td>
+    <td class="r" style="">5d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SALON LINE" data-st="alerta" data-name="co salon line sos cachos 300ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CO SALON LINE SOS CACHOS 300ML</td>
+    <td style="color:var(--text2);font-size:11px">SALON LINE</td>
+    <td class="r">R$ 547</td>
+    <td class="r" style="">R$ 45</td>
+    <td class="r">8.2%</td>
+    <td class="r" style="">15%</td>
+    <td class="r">32</td>
+    <td class="r" style="color:var(--text2)">3.3</td>
+    <td class="r" style="">62d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="oportunidade" data-name="fr cremer shortinho jumbo.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBO.</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 3.8k</td>
+    <td class="r" style="color:var(--green)">R$ 542</td>
+    <td class="r">14.3%</td>
+    <td class="r" style="color:var(--green)">1051%</td>
+    <td class="r">166</td>
+    <td class="r" style="color:var(--text2)">365.1</td>
+    <td class="r" style="">31d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="alerta" data-name="fr cremer shortinho jumbinho">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBINHO</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 20.0k</td>
+    <td class="r" style="color:var(--green)">R$ 986</td>
+    <td class="r">4.9%</td>
+    <td class="r" style="">15%</td>
+    <td class="r">1,060</td>
+    <td class="r" style="color:var(--text2)">24.6</td>
+    <td class="r" style="color:var(--amber)">174d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="critico" data-name="fr cremer hiper">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER HIPER</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 22.9k</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">—</td>
+    <td class="r" style="color:var(--red)">-100%</td>
+    <td class="r">573</td>
+    <td class="r" style="color:var(--text2)">78.5</td>
+    <td class="r" style="">37d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="critico" data-name="st inf pompom 70g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST INF POMPOM 70G</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 179</td>
+    <td class="r" style="">R$ 3</td>
+    <td class="r">1.4%</td>
+    <td class="r" style="color:var(--red)">-89%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">16.5</td>
+    <td class="r" style="">84d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="oportunidade" data-name="co inf pom pom 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CO INF POM POM 200ML</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 26</td>
+    <td class="r" style="">R$ 3</td>
+    <td class="r">11.4%</td>
+    <td class="r" style="color:var(--green)">236%</td>
+    <td class="r">2</td>
+    <td class="r" style="color:var(--text2)">0.8</td>
+    <td class="r" style="color:var(--red)">609d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="oportunidade" data-name="fr geriat bigfral derma plus econ">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR GERIAT BIGFRAL DERMA PLUS ECON</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 220</td>
+    <td class="r" style="">R$ 22</td>
+    <td class="r">10.0%</td>
+    <td class="r" style="color:var(--green)">115%</td>
+    <td class="r">4</td>
+    <td class="r" style="color:var(--text2)">2.7</td>
+    <td class="r" style="">84d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="alerta" data-name="fr geriat bigfral derma plus not">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR GERIAT BIGFRAL DERMA PLUS NOT</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 480</td>
+    <td class="r" style="">R$ 42</td>
+    <td class="r">8.8%</td>
+    <td class="r" style="color:var(--green)">76%</td>
+    <td class="r">16</td>
+    <td class="r" style="color:var(--text2)">1.8</td>
+    <td class="r" style="color:var(--amber)">99d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="oportunidade" data-name="sh cremer 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SH CREMER 200ML</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 27</td>
+    <td class="r" style="">R$ 3</td>
+    <td class="r">11.7%</td>
+    <td class="r" style="color:var(--green)">277%</td>
+    <td class="r">3</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--amber)">115d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="oportunidade" data-name="sh inf pompom 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SH INF POMPOM 200ML</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 76</td>
+    <td class="r" style="">R$ 9</td>
+    <td class="r">11.8%</td>
+    <td class="r" style="color:var(--green)">280%</td>
+    <td class="r">7</td>
+    <td class="r" style="color:var(--text2)">3.4</td>
+    <td class="r" style="">31d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="sem_venda" data-name="fr cremer shortinho jumbo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR CREMER SHORTINHO JUMBO</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">—</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">31.9</td>
+    <td class="r" style="">3d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="FALCON" data-st="alerta" data-name="fr geriat bigfral derma plus">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR GERIAT BIGFRAL DERMA PLUS</td>
+    <td style="color:var(--text2);font-size:11px">FALCON</td>
+    <td class="r">R$ 494</td>
+    <td class="r" style="">R$ 42</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="color:var(--green)">100%</td>
+    <td class="r">19</td>
+    <td class="r" style="color:var(--text2)">6.1</td>
+    <td class="r" style="">16d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="anomalia" data-name="fr babysec ultra mega">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">7.4%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-2,190</td>
+    <td class="r" style="color:var(--text2)">263.3</td>
+    <td class="r" style="">71d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="anomalia" data-name="fr babysec ultra hiper">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA HIPER</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">6.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-1,003</td>
+    <td class="r" style="color:var(--text2)">102.7</td>
+    <td class="r" style="color:var(--amber)">100d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="alerta" data-name="fr babysec ultra shortinho mega">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC ULTRA SHORTINHO MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 21.0k</td>
+    <td class="r" style="color:var(--green)">R$ 1.7k</td>
+    <td class="r">8.2%</td>
+    <td class="r" style="color:var(--green)">75%</td>
+    <td class="r">953</td>
+    <td class="r" style="color:var(--text2)">119.5</td>
+    <td class="r" style="">45d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="volume" data-name="abs diana 8un sve c/abas">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ABS DIANA 8UN SVE C/ABAS</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 2.2k</td>
+    <td class="r" style="">R$ 230</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="">24%</td>
+    <td class="r">774</td>
+    <td class="r" style="color:var(--text2)">39.9</td>
+    <td class="r" style="">87d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="sem_venda" data-name="fr baysec prem shortinho mega">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BAYSEC PREM SHORTINHO MEGA</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">8.6</td>
+    <td class="r" style="color:var(--amber)">341d</td>
+    <td class="r" style="color:var(--red)">33d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="alerta" data-name="fr babysec prem shortinho mega imp">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">FR BABYSEC PREM SHORTINHO MEGA IMP</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 7.3k</td>
+    <td class="r" style="color:var(--green)">R$ 636</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">36%</td>
+    <td class="r">210</td>
+    <td class="r" style="color:var(--text2)">17.5</td>
+    <td class="r" style="color:var(--amber)">141d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="critico" data-name="abs diana 8un sve c/abas not">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ABS DIANA 8UN SVE C/ABAS NOT</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 1.4k</td>
+    <td class="r" style="">R$ 31</td>
+    <td class="r">2.1%</td>
+    <td class="r" style="color:var(--red)">-87%</td>
+    <td class="r">363</td>
+    <td class="r" style="color:var(--text2)">15.3</td>
+    <td class="r" style="">83d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="critico" data-name="abs diana 16 unid suave c\ abas int">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ABS DIANA 16 UNID SUAVE C\ ABAS INT</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 914</td>
+    <td class="r" style="">R$ 36</td>
+    <td class="r">3.9%</td>
+    <td class="r" style="color:var(--red)">-73%</td>
+    <td class="r">122</td>
+    <td class="r" style="color:var(--text2)">9.7</td>
+    <td class="r" style="">81d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SOFTYS" data-st="critico" data-name="abs diana 16unid suave c\ abas">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ABS DIANA 16UNID SUAVE C\ ABAS</td>
+    <td style="color:var(--text2);font-size:11px">SOFTYS</td>
+    <td class="r">R$ 2.0k</td>
+    <td class="r" style="">R$ 57</td>
+    <td class="r">2.8%</td>
+    <td class="r" style="color:var(--red)">-76%</td>
+    <td class="r">407</td>
+    <td class="r" style="color:var(--text2)">12.4</td>
+    <td class="r" style="">66d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="critico" data-name="sard crusoe 125g molho tom">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 10.9k</td>
+    <td class="r" style="color:var(--green)">R$ 701</td>
+    <td class="r">6.4%</td>
+    <td class="r" style="color:var(--red)">-2%</td>
+    <td class="r">2,190</td>
+    <td class="r" style="color:var(--text2)">73.8</td>
+    <td class="r" style="color:var(--red)">479d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="critico" data-name="sard crusoe 125g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD CRUSOE 125G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 13.9k</td>
+    <td class="r" style="color:var(--green)">R$ 890</td>
+    <td class="r">6.4%</td>
+    <td class="r" style="color:var(--red)">-2%</td>
+    <td class="r">2,780</td>
+    <td class="r" style="color:var(--text2)">103.0</td>
+    <td class="r" style="color:var(--amber)">296d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="sem_venda" data-name="sard ralada viva mar 110g molho tom">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD RALADA VIVA MAR 110G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">9.2</td>
+    <td class="r" style="color:var(--red)">2213d</td>
+    <td class="r" style="color:var(--amber)">12d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="alerta" data-name="atum crusoe 140g ped">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM CRUSOE 140G PED</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 539</td>
+    <td class="r" style="">R$ 38</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="">7%</td>
+    <td class="r">66</td>
+    <td class="r" style="color:var(--text2)">3.7</td>
+    <td class="r" style="color:var(--red)">731d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="alerta" data-name="atum crusoe 140g oleo ralado">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM CRUSOE 140G OLEO RALADO</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 152</td>
+    <td class="r" style="">R$ 11</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="">7%</td>
+    <td class="r">24</td>
+    <td class="r" style="color:var(--text2)">3.0</td>
+    <td class="r" style="color:var(--red)">718d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="sem_venda" data-name="atum ralado robinson crusoe 140g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM RALADO ROBINSON CRUSOE 140G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">1.5</td>
+    <td class="r" style="color:var(--red)">712d</td>
+    <td class="r" style="color:var(--amber)">12d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="alerta" data-name="atum crusoe solido 170g nat">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM CRUSOE SOLIDO 170G NAT</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 158</td>
+    <td class="r" style="">R$ 11</td>
+    <td class="r">6.9%</td>
+    <td class="r" style="">7%</td>
+    <td class="r">18</td>
+    <td class="r" style="color:var(--text2)">1.2</td>
+    <td class="r" style="color:var(--red)">854d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="alerta" data-name="atum crusoe 140g nat ralado">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM CRUSOE 140G NAT RALADO</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 76</td>
+    <td class="r" style="">R$ 5</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="">7%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">2.2</td>
+    <td class="r" style="color:var(--red)">428d</td>
+    <td class="r" style="color:var(--amber)">12d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="alerta" data-name="atum crusoe solido 170g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM CRUSOE SOLIDO 170G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 264</td>
+    <td class="r" style="">R$ 19</td>
+    <td class="r">7.2%</td>
+    <td class="r" style="">12%</td>
+    <td class="r">30</td>
+    <td class="r" style="color:var(--text2)">1.6</td>
+    <td class="r" style="color:var(--red)">570d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CRUSOE" data-st="sem_venda" data-name="salada atum robinson crusoe 160g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SALADA ATUM ROBINSON CRUSOE 160G</td>
+    <td style="color:var(--text2);font-size:11px">CRUSOE</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.7</td>
+    <td class="r" style="color:var(--amber)">360d</td>
+    <td class="r" style="color:var(--amber)">12d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="critico" data-name="tint soft color tonaliz">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT SOFT COLOR TONALIZ</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 1.8k</td>
+    <td class="r" style="">R$ 135</td>
+    <td class="r">7.5%</td>
+    <td class="r" style="color:var(--red)">-3%</td>
+    <td class="r">90</td>
+    <td class="r" style="color:var(--text2)">4.8</td>
+    <td class="r" style="color:var(--red)">1328d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="critico" data-name="tint koleston">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT KOLESTON</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 20.4k</td>
+    <td class="r" style="color:var(--green)">R$ 1.6k</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="color:var(--red)">-2%</td>
+    <td class="r">1,133</td>
+    <td class="r" style="color:var(--text2)">99.3</td>
+    <td class="r" style="">72d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="critico" data-name="tint koleston deluxe 0 % amonia.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TINT KOLESTON DELUXE 0 % AMONIA.</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 4.6k</td>
+    <td class="r" style="">R$ 343</td>
+    <td class="r">7.4%</td>
+    <td class="r" style="color:var(--red)">-5%</td>
+    <td class="r">196</td>
+    <td class="r" style="color:var(--text2)">15.1</td>
+    <td class="r" style="color:var(--red)">379d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="alerta" data-name="po descol blondor sh 20 g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PO DESCOL BLONDOR SH 20 G</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 449</td>
+    <td class="r" style="">R$ 35</td>
+    <td class="r">7.7%</td>
+    <td class="r" style="">2%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">47.0</td>
+    <td class="r" style="color:var(--amber)">94d</td>
+    <td class="r" style="color:var(--amber)">8d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="alerta" data-name="masc trat wella koleston 170ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MASC TRAT WELLA KOLESTON 170ML</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 544</td>
+    <td class="r" style="">R$ 50</td>
+    <td class="r">9.2%</td>
+    <td class="r" style="color:var(--green)">51%</td>
+    <td class="r">15</td>
+    <td class="r" style="color:var(--text2)">2.0</td>
+    <td class="r" style="color:var(--red)">604d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="WELLA" data-st="alerta" data-name="oleo cap wella koleston 100 ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP WELLA KOLESTON 100 ML</td>
+    <td style="color:var(--text2);font-size:11px">WELLA</td>
+    <td class="r">R$ 1.1k</td>
+    <td class="r" style="">R$ 98</td>
+    <td class="r">9.3%</td>
+    <td class="r" style="color:var(--green)">54%</td>
+    <td class="r">28</td>
+    <td class="r" style="color:var(--text2)">2.5</td>
+    <td class="r" style="color:var(--red)">456d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="critico" data-name="da monange 150ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA MONANGE 150ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 14.7k</td>
+    <td class="r" style="">R$ 284</td>
+    <td class="r">1.9%</td>
+    <td class="r" style="color:var(--red)">-81%</td>
+    <td class="r">2,013</td>
+    <td class="r" style="color:var(--text2)">250.2</td>
+    <td class="r" style="color:var(--amber)">113d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lo hid paixao 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID PAIXAO 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 2.7k</td>
+    <td class="r" style="">R$ 262</td>
+    <td class="r">9.7%</td>
+    <td class="r" style="color:var(--green)">94%</td>
+    <td class="r">425</td>
+    <td class="r" style="color:var(--text2)">113.6</td>
+    <td class="r" style="color:var(--amber)">119d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="oleo corp paixao 100ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 100ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 21.0k</td>
+    <td class="r" style="color:var(--green)">R$ 1.9k</td>
+    <td class="r">9.0%</td>
+    <td class="r" style="color:var(--green)">65%</td>
+    <td class="r">2,420</td>
+    <td class="r" style="color:var(--text2)">134.4</td>
+    <td class="r" style="">48d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="oleo corp paixao 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CORP PAIXAO 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 18.7k</td>
+    <td class="r" style="color:var(--green)">R$ 1.3k</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="">47%</td>
+    <td class="r">1,223</td>
+    <td class="r" style="color:var(--text2)">57.2</td>
+    <td class="r" style="color:var(--amber)">93d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="anomalia" data-name="st liq monange 240ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST LIQ MONANGE 240ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">12.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-646</td>
+    <td class="r" style="color:var(--text2)">17.3</td>
+    <td class="r" style="color:var(--amber)">177d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="anomalia" data-name="gel fix nylooks 240g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GEL FIX NYLOOKS 240G</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-332</td>
+    <td class="r" style="color:var(--text2)">39.7</td>
+    <td class="r" style="">66d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="cb bozzano 65g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CB BOZZANO 65G</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 479</td>
+    <td class="r" style="">R$ 60</td>
+    <td class="r">12.5%</td>
+    <td class="r" style="color:var(--green)">141%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">8.1</td>
+    <td class="r" style="color:var(--amber)">305d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="anomalia" data-name="da bozzano 150ml thermo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA BOZZANO 150ML THERMO</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">3.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-742</td>
+    <td class="r" style="color:var(--text2)">11.7</td>
+    <td class="r" style="color:var(--amber)">166d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="algodao york bola 50g fluffy">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ALGODAO YORK BOLA 50G FLUFFY</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 489</td>
+    <td class="r" style="">R$ 49</td>
+    <td class="r">10.0%</td>
+    <td class="r" style="color:var(--green)">116%</td>
+    <td class="r">100</td>
+    <td class="r" style="color:var(--text2)">15.6</td>
+    <td class="r" style="color:var(--amber)">109d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="anomalia" data-name="co monange 325ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CO MONANGE 325ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">12.5%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-298</td>
+    <td class="r" style="color:var(--text2)">7.9</td>
+    <td class="r" style="color:var(--amber)">213d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="sh monange 325ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SH MONANGE 325ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 917</td>
+    <td class="r" style="">R$ 78</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="color:var(--green)">110%</td>
+    <td class="r">135</td>
+    <td class="r" style="color:var(--text2)">10.2</td>
+    <td class="r" style="color:var(--amber)">172d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="dc monange antit 50g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DC MONANGE ANTIT 50G</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 220</td>
+    <td class="r" style="">R$ 14</td>
+    <td class="r">6.3%</td>
+    <td class="r" style="">3%</td>
+    <td class="r">29</td>
+    <td class="r" style="color:var(--text2)">4.1</td>
+    <td class="r" style="color:var(--red)">370d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lo hid paixao 400ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID PAIXAO 400ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 4.3k</td>
+    <td class="r" style="">R$ 303</td>
+    <td class="r">7.0%</td>
+    <td class="r" style="">27%</td>
+    <td class="r">388</td>
+    <td class="r" style="color:var(--text2)">13.4</td>
+    <td class="r" style="color:var(--amber)">112d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lt colonia 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LT COLONIA 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 690</td>
+    <td class="r" style="">R$ 53</td>
+    <td class="r">7.7%</td>
+    <td class="r" style="color:var(--green)">84%</td>
+    <td class="r">128</td>
+    <td class="r" style="color:var(--text2)">8.3</td>
+    <td class="r" style="color:var(--amber)">170d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lo hid paixao bisn 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID PAIXAO BISN 200ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 1.9k</td>
+    <td class="r" style="">R$ 143</td>
+    <td class="r">7.6%</td>
+    <td class="r" style="color:var(--green)">55%</td>
+    <td class="r">163</td>
+    <td class="r" style="color:var(--text2)">8.4</td>
+    <td class="r" style="color:var(--amber)">120d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="cr hid monange 200ml fir q10">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CR HID MONANGE 200ML FIR Q10</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 300</td>
+    <td class="r" style="">R$ 30</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="color:var(--green)">136%</td>
+    <td class="r">30</td>
+    <td class="r" style="color:var(--text2)">1.4</td>
+    <td class="r" style="color:var(--red)">666d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="algodao york bola 95g fluffy">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ALGODAO YORK BOLA 95G FLUFFY</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 103</td>
+    <td class="r" style="">R$ 11</td>
+    <td class="r">10.3%</td>
+    <td class="r" style="color:var(--green)">133%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">2.9</td>
+    <td class="r" style="color:var(--amber)">262d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="cp monange 300ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CP MONANGE 300ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 398</td>
+    <td class="r" style="">R$ 37</td>
+    <td class="r">9.3%</td>
+    <td class="r" style="color:var(--green)">84%</td>
+    <td class="r">57</td>
+    <td class="r" style="color:var(--text2)">3.2</td>
+    <td class="r" style="color:var(--amber)">228d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lo hid monange 400ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID MONANGE 400ML</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 866</td>
+    <td class="r" style="">R$ 63</td>
+    <td class="r">7.2%</td>
+    <td class="r" style="">39%</td>
+    <td class="r">81</td>
+    <td class="r" style="color:var(--text2)">3.1</td>
+    <td class="r" style="color:var(--amber)">228d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="oportunidade" data-name="hid corp monange 200ml antissinais">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">HID CORP MONANGE 200ML ANTISSINAIS</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 30</td>
+    <td class="r" style="">R$ 3</td>
+    <td class="r">9.0%</td>
+    <td class="r" style="color:var(--green)">159%</td>
+    <td class="r">3</td>
+    <td class="r" style="color:var(--text2)">0.6</td>
+    <td class="r" style="color:var(--red)">761d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="COTY" data-st="alerta" data-name="lo hid paixao 75g maos">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID PAIXAO 75G MAOS</td>
+    <td style="color:var(--text2);font-size:11px">COTY</td>
+    <td class="r">R$ 90</td>
+    <td class="r" style="">R$ 7</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="color:var(--green)">73%</td>
+    <td class="r">10</td>
+    <td class="r" style="color:var(--text2)">3.7</td>
+    <td class="r" style="">60d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="st veg giovanna baby 90g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST VEG GIOVANNA BABY 90G</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-7,600</td>
+    <td class="r" style="color:var(--text2)">15.8</td>
+    <td class="r" style="color:var(--red)">503d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da giovanna baby 150ml fem 72h">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML FEM 72H</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-2,620</td>
+    <td class="r" style="color:var(--text2)">18.9</td>
+    <td class="r" style="color:var(--red)">375d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="body splash giovanna baby 260ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">BODY SPLASH GIOVANNA BABY 260ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.8%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-4,182</td>
+    <td class="r" style="color:var(--text2)">18.0</td>
+    <td class="r" style="color:var(--amber)">356d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dc giovanna baby 55g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DC GIOVANNA BABY 55G</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-3,553</td>
+    <td class="r" style="color:var(--text2)">27.1</td>
+    <td class="r" style="color:var(--amber)">201d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml fem">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML FEM</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">15.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-2,068</td>
+    <td class="r" style="color:var(--text2)">15.4</td>
+    <td class="r" style="color:var(--amber)">249d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="alerta" data-name="gel higiene giovanna baby 60ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GEL HIGIENE GIOVANNA BABY 60ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 146</td>
+    <td class="r" style="">R$ 12</td>
+    <td class="r">8.1%</td>
+    <td class="r" style="color:var(--green)">61%</td>
+    <td class="r">36</td>
+    <td class="r" style="color:var(--text2)">6.4</td>
+    <td class="r" style="color:var(--amber)">338d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dc giovanna baby 60g bisnaga">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DC GIOVANNA BABY 60G BISNAGA</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-658</td>
+    <td class="r" style="color:var(--text2)">2.3</td>
+    <td class="r" style="color:var(--red)">705d</td>
+    <td class="r" style="color:var(--amber)">8d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="alerta" data-name="da giovanna baby 150ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 1.3k</td>
+    <td class="r" style="">R$ 107</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="">37%</td>
+    <td class="r">131</td>
+    <td class="r" style="color:var(--text2)">4.1</td>
+    <td class="r" style="color:var(--red)">374d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="alerta" data-name="st inf giovanna baby 90g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST INF GIOVANNA BABY 90G</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 335</td>
+    <td class="r" style="">R$ 23</td>
+    <td class="r">6.8%</td>
+    <td class="r" style="">20%</td>
+    <td class="r">105</td>
+    <td class="r" style="color:var(--text2)">9.0</td>
+    <td class="r" style="color:var(--amber)">155d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da gb 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GB 200ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-240</td>
+    <td class="r" style="color:var(--text2)">0.3</td>
+    <td class="r" style="color:var(--red)">4042d</td>
+    <td class="r" style="color:var(--red)">54d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="alcool gel giovanna baby 500ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ALCOOL GEL GIOVANNA BABY 500ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">13.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-201</td>
+    <td class="r" style="color:var(--text2)">3.0</td>
+    <td class="r" style="color:var(--amber)">305d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="lo hid giovanna baby 200ml cherry">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID GIOVANNA BABY 200ML CHERRY</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-4</td>
+    <td class="r" style="color:var(--text2)">0.6</td>
+    <td class="r" style="color:var(--red)">1239d</td>
+    <td class="r" style="color:var(--amber)">15d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml gold">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML GOLD</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">11.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-225</td>
+    <td class="r" style="color:var(--text2)">2.1</td>
+    <td class="r" style="color:var(--amber)">270d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="lo hid giovanna baby sweet 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID GIOVANNA BABY SWEET 200ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-232</td>
+    <td class="r" style="color:var(--text2)">1.5</td>
+    <td class="r" style="color:var(--amber)">357d</td>
+    <td class="r" style="color:var(--amber)">15d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml just say">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML JUST SAY</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-1</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--red)">384d</td>
+    <td class="r" style="color:var(--amber)">18d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da gb 150ml men sport">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GB 150ML MEN SPORT</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-120</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">313d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="lo hid giovanna baby classic 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LO HID GIOVANNA BABY CLASSIC 200ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.5%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-163</td>
+    <td class="r" style="color:var(--text2)">1.9</td>
+    <td class="r" style="color:var(--amber)">265d</td>
+    <td class="r" style="color:var(--amber)">15d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml blueb">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML BLUEB</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-216</td>
+    <td class="r" style="color:var(--text2)">1.8</td>
+    <td class="r" style="color:var(--amber)">234d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da giovanna baby 150ml gold">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML GOLD</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">15.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-240</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">1761d</td>
+    <td class="r" style="color:var(--red)">52d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml silver">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML SILVER</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-231</td>
+    <td class="r" style="color:var(--text2)">1.5</td>
+    <td class="r" style="color:var(--amber)">234d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da giovanna baby 150ml 0%alum">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML 0%ALUM</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-222</td>
+    <td class="r" style="color:var(--text2)">1.4</td>
+    <td class="r" style="color:var(--amber)">251d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml men">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML MEN</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-141</td>
+    <td class="r" style="color:var(--text2)">0.6</td>
+    <td class="r" style="color:var(--red)">497d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="da giovanna baby 150ml men sport">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML MEN SPORT</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.4%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-120</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">2203d</td>
+    <td class="r" style="color:var(--red)">56d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="dr giovanna baby 50ml men s/perf">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR GIOVANNA BABY 50ML MEN S/PERF</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.6%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-138</td>
+    <td class="r" style="color:var(--text2)">0.5</td>
+    <td class="r" style="color:var(--red)">546d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="sem_venda" data-name="da giovanna baby 150ml silver">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DA GIOVANNA BABY 150ML SILVER</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">1191d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="anomalia" data-name="st liq giovanna baby 500ml blue">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST LIQ GIOVANNA BABY 500ML BLUE</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">6.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-88</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">1721d</td>
+    <td class="r" style="color:var(--red)">56d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="sem_venda" data-name="kit gb lo hid+body splash+lip balm">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT GB LO HID+BODY SPLASH+LIP BALM</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.3</td>
+    <td class="r" style="color:var(--red)">380d</td>
+    <td class="r" style="color:var(--amber)">24d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="PRO NOVA" data-st="critico" data-name="st liq inf giovanna baby giby 200ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ST LIQ INF GIOVANNA BABY GIBY 200ML</td>
+    <td style="color:var(--text2);font-size:11px">PRO NOVA</td>
+    <td class="r">R$ 123</td>
+    <td class="r" style="">R$ 7</td>
+    <td class="r">5.9%</td>
+    <td class="r" style="color:var(--red)">-12%</td>
+    <td class="r">13</td>
+    <td class="r" style="color:var(--text2)">1.3</td>
+    <td class="r" style="color:var(--amber)">93d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="critico" data-name="racao adultos originale 5kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO ADULTOS ORIGINALE 5KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 21.2k</td>
+    <td class="r" style="color:var(--green)">R$ 552</td>
+    <td class="r">2.6%</td>
+    <td class="r" style="color:var(--red)">-76%</td>
+    <td class="r">1,062</td>
+    <td class="r" style="color:var(--text2)">135.6</td>
+    <td class="r" style="">27d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao master cat adt cast 10,1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO MASTER CAT ADT CAST 10,1KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">6495d</td>
+    <td class="r" style="color:var(--red)">31d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao master canis rc pq bits15 kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO MASTER CANIS RC PQ BITS15 KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.0</td>
+    <td class="r" style="color:var(--red)">16389d</td>
+    <td class="r" style="color:var(--amber)">11d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao master canis dia a dia 15kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO MASTER CANIS DIA A DIA 15KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">6.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.0</td>
+    <td class="r" style="color:var(--red)">8056d</td>
+    <td class="r" style="color:var(--red)">31d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="alerta" data-name="racao cat mix originale 10,1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO CAT MIX ORIGINALE 10,1KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 366</td>
+    <td class="r" style="">R$ 31</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="color:var(--green)">68%</td>
+    <td class="r">5</td>
+    <td class="r" style="color:var(--text2)">0.4</td>
+    <td class="r" style="color:var(--red)">564d</td>
+    <td class="r" style="color:var(--amber)">11d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao master canis alta perf 15kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO MASTER CANIS ALTA PERF 15KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.0</td>
+    <td class="r" style="color:var(--red)">5417d</td>
+    <td class="r" style="color:var(--red)">31d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao cat mix originale 20kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO CAT MIX ORIGINALE 20KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">2548d</td>
+    <td class="r" style="color:var(--amber)">11d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="TREVO" data-st="sem_venda" data-name="racao filhote originale 15 kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">RACAO FILHOTE ORIGINALE 15 KG</td>
+    <td style="color:var(--text2);font-size:11px">TREVO</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">6.7%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">920d</td>
+    <td class="r" style="color:var(--amber)">11d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard ralada 88 110g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD RALADA 88 110G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 235</td>
+    <td class="r" style="">R$ 19</td>
+    <td class="r">8.1%</td>
+    <td class="r" style="">30%</td>
+    <td class="r">50</td>
+    <td class="r" style="color:var(--text2)">7.5</td>
+    <td class="r" style="color:var(--red)">2773d</td>
+    <td class="r" style="color:var(--amber)">10d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 125g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 125G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 1.3k</td>
+    <td class="r" style="">R$ 103</td>
+    <td class="r">7.9%</td>
+    <td class="r" style="">27%</td>
+    <td class="r">210</td>
+    <td class="r" style="color:var(--text2)">7.8</td>
+    <td class="r" style="color:var(--red)">1864d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard 88 125g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD 88 125G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 845</td>
+    <td class="r" style="">R$ 68</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="">28%</td>
+    <td class="r">150</td>
+    <td class="r" style="color:var(--text2)">8.5</td>
+    <td class="r" style="color:var(--red)">1127d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sardinha ralada 88 lta 110g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARDINHA RALADA 88 LTA 110G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 258</td>
+    <td class="r" style="">R$ 21</td>
+    <td class="r">8.1%</td>
+    <td class="r" style="">29%</td>
+    <td class="r">55</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">19180d</td>
+    <td class="r" style="">6d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 125g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 125G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 1.2k</td>
+    <td class="r" style="">R$ 93</td>
+    <td class="r">7.9%</td>
+    <td class="r" style="">27%</td>
+    <td class="r">190</td>
+    <td class="r" style="color:var(--text2)">5.5</td>
+    <td class="r" style="color:var(--red)">835d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="critico" data-name="sard 88 tomate 125g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD 88 TOMATE 125G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 902</td>
+    <td class="r" style="">R$ 72</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="color:var(--red)">-13%</td>
+    <td class="r">160</td>
+    <td class="r" style="color:var(--text2)">5.5</td>
+    <td class="r" style="color:var(--amber)">353d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="atum ralado 88 140g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM RALADO 88 140G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 131</td>
+    <td class="r" style="">R$ 15</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">91%</td>
+    <td class="r">20</td>
+    <td class="r" style="color:var(--text2)">1.2</td>
+    <td class="r" style="color:var(--red)">1190d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 125g limao">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 125G LIMAO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 310</td>
+    <td class="r" style="">R$ 25</td>
+    <td class="r">7.9%</td>
+    <td class="r" style="">27%</td>
+    <td class="r">50</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">5111d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="atum solido 88 140g nat">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM SOLIDO 88 140G NAT</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 904</td>
+    <td class="r" style="">R$ 102</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">92%</td>
+    <td class="r">96</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">7739d</td>
+    <td class="r" style="color:var(--amber)">24d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 125g oleo defumado">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 125G OLEO DEFUMADO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 372</td>
+    <td class="r" style="">R$ 29</td>
+    <td class="r">7.9%</td>
+    <td class="r" style="">27%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">2.0</td>
+    <td class="r" style="color:var(--red)">530d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="atum g costa ralado 170g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM G COSTA RALADO 170G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 156</td>
+    <td class="r" style="">R$ 18</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">92%</td>
+    <td class="r">20</td>
+    <td class="r" style="color:var(--text2)">1.0</td>
+    <td class="r" style="color:var(--red)">955d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="atum ralado 88 140g nat">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM RALADO 88 140G NAT</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 52</td>
+    <td class="r" style="">R$ 6</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">91%</td>
+    <td class="r">8</td>
+    <td class="r" style="color:var(--text2)">0.7</td>
+    <td class="r" style="color:var(--red)">676d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="sem_venda" data-name="sard gdc 125g light">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD GDC 125G LIGHT</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">7.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">5111d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="sem_venda" data-name="atum g costa solido 170g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM G COSTA SOLIDO 170G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.2</td>
+    <td class="r" style="color:var(--red)">2557d</td>
+    <td class="r" style="color:var(--amber)">24d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="atum g costa ralado 170g molho tom">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ATUM G COSTA RALADO 170G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 312</td>
+    <td class="r" style="">R$ 35</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">92%</td>
+    <td class="r">40</td>
+    <td class="r" style="color:var(--text2)">0.9</td>
+    <td class="r" style="color:var(--amber)">308d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="pate atum g costa 150g trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PATE ATUM G COSTA 150G TRAD</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 58</td>
+    <td class="r" style="">R$ 7</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">92%</td>
+    <td class="r">6</td>
+    <td class="r" style="color:var(--text2)">1.0</td>
+    <td class="r" style="color:var(--amber)">199d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="volume" data-name="pate atum g costa 150g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PATE ATUM G COSTA 150G</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 58</td>
+    <td class="r" style="">R$ 7</td>
+    <td class="r">11.3%</td>
+    <td class="r" style="color:var(--green)">92%</td>
+    <td class="r">6</td>
+    <td class="r" style="color:var(--text2)">0.9</td>
+    <td class="r" style="color:var(--amber)">107d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 250g oleo">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 250G OLEO</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 268</td>
+    <td class="r" style="">R$ 21</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="">29%</td>
+    <td class="r">24</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">5111d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="NEUTERRA" data-st="alerta" data-name="sard g costa 250g molho tom">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">SARD G COSTA 250G MOLHO TOM</td>
+    <td style="color:var(--text2);font-size:11px">NEUTERRA</td>
+    <td class="r">R$ 669</td>
+    <td class="r" style="">R$ 54</td>
+    <td class="r">8.0%</td>
+    <td class="r" style="">29%</td>
+    <td class="r">60</td>
+    <td class="r" style="color:var(--text2)">2.4</td>
+    <td class="r" style="">20d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="alerta" data-name="molho tom pomodoro 300g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MOLHO TOM POMODORO 300G</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 3.8k</td>
+    <td class="r" style="">R$ 326</td>
+    <td class="r">8.5%</td>
+    <td class="r" style="">34%</td>
+    <td class="r">2,507</td>
+    <td class="r" style="color:var(--text2)">98.1</td>
+    <td class="r" style="color:var(--red)">397d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="anomalia" data-name="molho tom pomarola sh 300g trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MOLHO TOM POMAROLA SH 300G TRAD</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-3,824</td>
+    <td class="r" style="color:var(--text2)">158.4</td>
+    <td class="r" style="">71d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="alerta" data-name="ext tom elefante 130g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">EXT TOM ELEFANTE 130G</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 1.0k</td>
+    <td class="r" style="">R$ 84</td>
+    <td class="r">8.4%</td>
+    <td class="r" style="">32%</td>
+    <td class="r">324</td>
+    <td class="r" style="color:var(--text2)">29.6</td>
+    <td class="r" style="">87d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="volume" data-name="catchup elefante 350g class">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CATCHUP ELEFANTE 350G CLASS</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 1.1k</td>
+    <td class="r" style="">R$ 124</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">78%</td>
+    <td class="r">168</td>
+    <td class="r" style="color:var(--text2)">17.1</td>
+    <td class="r" style="">86d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="anomalia" data-name="maionese liza sh 400g caseira trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MAIONESE LIZA SH 400G CASEIRA TRAD</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-571</td>
+    <td class="r" style="color:var(--text2)">5.7</td>
+    <td class="r" style="color:var(--amber)">181d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="CARGILL" data-st="anomalia" data-name="maionese liza sh 196g trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">MAIONESE LIZA SH 196G TRAD</td>
+    <td style="color:var(--text2);font-size:11px">CARGILL</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-78</td>
+    <td class="r" style="color:var(--text2)">8.4</td>
+    <td class="r" style="">32d</td>
+    <td class="r" style="color:var(--red)">157d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="MARATA" data-st="sem_venda" data-name="cafe marata vacuo 500g trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CAFE MARATA VACUO 500G TRAD</td>
+    <td style="color:var(--text2);font-size:11px">MARATA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">18.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">91d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="MARATA" data-st="sem_venda" data-name="cafe puro vacuo 250g">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CAFE PURO VACUO 250G</td>
+    <td style="color:var(--text2);font-size:11px">MARATA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">18.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">1.8</td>
+    <td class="r" style="color:var(--red)">956d</td>
+    <td class="r" style="color:var(--red)">33d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="MARATA" data-st="critico" data-name="cha marata 10un.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CHA MARATA 10UN.</td>
+    <td style="color:var(--text2);font-size:11px">MARATA</td>
+    <td class="r">R$ 21</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">2.0%</td>
+    <td class="r" style="color:var(--red)">-81%</td>
+    <td class="r">6</td>
+    <td class="r" style="color:var(--text2)">0.9</td>
+    <td class="r" style="color:var(--red)">1196d</td>
+    <td class="r" style="">5d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="MARATA" data-st="sem_venda" data-name="cafe marata vacuo 250g trad">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CAFE MARATA VACUO 250G TRAD</td>
+    <td style="color:var(--text2);font-size:11px">MARATA</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">18.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">—</td>
+    <td class="r" style="">—</td>
+    <td class="r" style="color:var(--red)">152d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="critico" data-name="ct skala 1kg.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA 1KG.</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 7.7k</td>
+    <td class="r" style="">R$ 452</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="color:var(--red)">-22%</td>
+    <td class="r">753</td>
+    <td class="r" style="color:var(--text2)">379.6</td>
+    <td class="r" style="">78d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="alerta" data-name="ct skala #mais cachos 1kg">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA #MAIS CACHOS 1KG</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 20.4k</td>
+    <td class="r" style="color:var(--green)">R$ 1.5k</td>
+    <td class="r">7.2%</td>
+    <td class="r" style="">24%</td>
+    <td class="r">1,979</td>
+    <td class="r" style="color:var(--text2)">94.4</td>
+    <td class="r" style="color:var(--amber)">99d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="oportunidade" data-name="kit cap skala sh+co 325ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP SKALA SH+CO 325ML</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 1.6k</td>
+    <td class="r" style="">R$ 224</td>
+    <td class="r">14.4%</td>
+    <td class="r" style="color:var(--green)">129%</td>
+    <td class="r">120</td>
+    <td class="r" style="color:var(--text2)">39.7</td>
+    <td class="r" style="color:var(--amber)">119d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="critico" data-name="dr skala 60ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">DR SKALA 60ML</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 574</td>
+    <td class="r" style="">R$ 33</td>
+    <td class="r">5.8%</td>
+    <td class="r" style="color:var(--red)">-19%</td>
+    <td class="r">115</td>
+    <td class="r" style="color:var(--text2)">5.9</td>
+    <td class="r" style="color:var(--red)">633d</td>
+    <td class="r" style="color:var(--amber)">8d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="oportunidade" data-name="oleo cap skala 90ml 5x1">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">OLEO CAP SKALA 90ML 5X1</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 352</td>
+    <td class="r" style="">R$ 49</td>
+    <td class="r">13.9%</td>
+    <td class="r" style="color:var(--green)">207%</td>
+    <td class="r">22</td>
+    <td class="r" style="color:var(--text2)">4.9</td>
+    <td class="r" style="color:var(--red)">637d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="critico" data-name="ct skala 1kg kids">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CT SKALA 1KG KIDS</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 3.9k</td>
+    <td class="r" style="">R$ 296</td>
+    <td class="r">7.6%</td>
+    <td class="r" style="color:var(--red)">-6%</td>
+    <td class="r">380</td>
+    <td class="r" style="color:var(--text2)">51.9</td>
+    <td class="r" style="">37d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="SKALA" data-st="critico" data-name="kit cap kids skala sh+co 325ml">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">KIT CAP KIDS SKALA SH+CO 325ML</td>
+    <td style="color:var(--text2);font-size:11px">SKALA</td>
+    <td class="r">R$ 680</td>
+    <td class="r" style="">R$ 42</td>
+    <td class="r">6.1%</td>
+    <td class="r" style="color:var(--red)">-11%</td>
+    <td class="r">54</td>
+    <td class="r" style="color:var(--text2)">9.1</td>
+    <td class="r" style="color:var(--amber)">161d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="anomalia" data-name="ap barb bic comf2 2un sens vde">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC COMF2 2UN SENS VDE</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">8.4%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-36,381</td>
+    <td class="r" style="color:var(--text2)">29.7</td>
+    <td class="r" style="color:var(--red)">1275d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="anomalia" data-name="ap barb bic shaver">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SHAVER</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">2.0%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-24,021</td>
+    <td class="r" style="color:var(--text2)">18.7</td>
+    <td class="r" style="color:var(--red)">1575d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="oportunidade" data-name="lamina barb bic duplo fio">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LAMINA BARB BIC DUPLO FIO</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 1.6k</td>
+    <td class="r" style="">R$ 231</td>
+    <td class="r">14.5%</td>
+    <td class="r" style="color:var(--green)">231%</td>
+    <td class="r">550</td>
+    <td class="r" style="color:var(--text2)">135.1</td>
+    <td class="r" style="color:var(--amber)">143d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="anomalia" data-name="isq bic j6 maxi 12un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">ISQ BIC J6 MAXI 12UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">5.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-14,930</td>
+    <td class="r" style="color:var(--text2)">18.4</td>
+    <td class="r" style="color:var(--red)">995d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="anomalia" data-name="ap barb bic comf2 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC COMF2 2UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">19.9%</td>
+    <td class="r" style="">—</td>
+    <td class="r">-4,008</td>
+    <td class="r" style="color:var(--text2)">49.3</td>
+    <td class="r" style="color:var(--amber)">103d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-anomalia">Anomalia</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="volume" data-name="ap barb bic3 intens 2un pto.">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC3 INTENS 2UN PTO.</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 154</td>
+    <td class="r" style="">R$ 18</td>
+    <td class="r">11.4%</td>
+    <td class="r" style="color:var(--green)">58%</td>
+    <td class="r">36</td>
+    <td class="r" style="color:var(--text2)">24.5</td>
+    <td class="r" style="color:var(--amber)">222d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="critico" data-name="ap barb bic3 acqua 2un azul">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC3 ACQUA 2UN AZUL</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 3.2k</td>
+    <td class="r" style="">R$ 89</td>
+    <td class="r">2.8%</td>
+    <td class="r" style="color:var(--red)">-60%</td>
+    <td class="r">744</td>
+    <td class="r" style="color:var(--text2)">8.3</td>
+    <td class="r" style="color:var(--red)">692d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-critico">Crítico</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="ap barb bic soleil 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SOLEIL 2UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">15.2</td>
+    <td class="r" style="color:var(--amber)">170d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="ap barb bic sensitiv 56un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SENSITIV 56UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.3%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.1</td>
+    <td class="r" style="color:var(--red)">34518d</td>
+    <td class="r" style="color:var(--red)">33d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="caneta bic gelocity stic">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CANETA BIC GELOCITY STIC</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.5%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">0.3</td>
+    <td class="r" style="color:var(--red)">5688d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="alerta" data-name="ap barb bic flex3 azul 1un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC FLEX3 AZUL 1UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 71</td>
+    <td class="r" style="">R$ 7</td>
+    <td class="r">9.8%</td>
+    <td class="r" style="">12%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">8.0</td>
+    <td class="r" style="color:var(--amber)">204d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="ap barb bic soleil 2un nat">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SOLEIL 2UN NAT</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.5%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">1.2</td>
+    <td class="r" style="color:var(--red)">580d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="ap barb bic soleil 2un+1apar shave&">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SOLEIL 2UN+1APAR SHAVE&</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">4.7</td>
+    <td class="r" style="color:var(--amber)">116d</td>
+    <td class="r" style="color:var(--red)">32d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="sem_venda" data-name="ap barb bic soleil euc/lav 3un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SOLEIL EUC/LAV 3UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">10.4%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">2.1</td>
+    <td class="r" style="color:var(--amber)">239d</td>
+    <td class="r" style="color:var(--amber)">8d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="BIC" data-st="volume" data-name="ap barb bic soleil 3un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AP BARB BIC SOLEIL 3UN</td>
+    <td style="color:var(--text2);font-size:11px">BIC</td>
+    <td class="r">R$ 20</td>
+    <td class="r" style="">R$ 2</td>
+    <td class="r">12.0%</td>
+    <td class="r" style="color:var(--green)">81%</td>
+    <td class="r">1</td>
+    <td class="r" style="color:var(--text2)">0.8</td>
+    <td class="r" style="color:var(--red)">564d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac alc aa 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AA 2UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.8k</td>
+    <td class="r" style="">R$ 203</td>
+    <td class="r">11.0%</td>
+    <td class="r" style="color:var(--green)">81%</td>
+    <td class="r">338</td>
+    <td class="r" style="color:var(--text2)">92.6</td>
+    <td class="r" style="color:var(--amber)">107d</td>
+    <td class="r" style="">1d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac alc aaa 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AAA 2UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.8k</td>
+    <td class="r" style="">R$ 158</td>
+    <td class="r">8.6%</td>
+    <td class="r" style="">36%</td>
+    <td class="r">233</td>
+    <td class="r" style="color:var(--text2)">85.5</td>
+    <td class="r" style="color:var(--amber)">105d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac zinco tubo aa 4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO TUBO AA 4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 823</td>
+    <td class="r" style="">R$ 90</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">78%</td>
+    <td class="r">204</td>
+    <td class="r" style="color:var(--text2)">56.4</td>
+    <td class="r" style="color:var(--amber)">113d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac alc aaa l4p3un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AAA L4P3UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 805</td>
+    <td class="r" style="">R$ 70</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">37%</td>
+    <td class="r">72</td>
+    <td class="r" style="color:var(--text2)">52.7</td>
+    <td class="r" style="color:var(--amber)">103d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac alc aaa l6p4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AAA L6P4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 952</td>
+    <td class="r" style="">R$ 104</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">79%</td>
+    <td class="r">84</td>
+    <td class="r" style="color:var(--text2)">53.8</td>
+    <td class="r" style="color:var(--amber)">100d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac zinco sm aaa 4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO SM AAA 4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.5k</td>
+    <td class="r" style="">R$ 132</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">37%</td>
+    <td class="r">228</td>
+    <td class="r" style="color:var(--text2)">86.7</td>
+    <td class="r" style="">63d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac zinco sm aa 4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO SM AA 4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.1k</td>
+    <td class="r" style="">R$ 100</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">38%</td>
+    <td class="r">189</td>
+    <td class="r" style="color:var(--text2)">79.7</td>
+    <td class="r" style="">62d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="oportunidade" data-name="pilha rayovac alc aa l6p4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AA L6P4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.4k</td>
+    <td class="r" style="">R$ 263</td>
+    <td class="r">18.9%</td>
+    <td class="r" style="color:var(--green)">209%</td>
+    <td class="r">134</td>
+    <td class="r" style="color:var(--text2)">52.9</td>
+    <td class="r" style="color:var(--amber)">90d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-oportunidade">Oportunidade</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="lamp rayovac led 8w/9w bra">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LAMP RAYOVAC LED 8W/9W BRA</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 112</td>
+    <td class="r" style="">R$ 11</td>
+    <td class="r">10.3%</td>
+    <td class="r" style="">30%</td>
+    <td class="r">30</td>
+    <td class="r" style="color:var(--text2)">47.4</td>
+    <td class="r" style="">89d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac alc aaa 2un lr03">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AAA 2UN LR03</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 410</td>
+    <td class="r" style="">R$ 44</td>
+    <td class="r">10.8%</td>
+    <td class="r" style="color:var(--green)">76%</td>
+    <td class="r">56</td>
+    <td class="r" style="color:var(--text2)">28.8</td>
+    <td class="r" style="color:var(--amber)">127d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac zinco tubo aaa r3 4un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO TUBO AAA R3 4UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 843</td>
+    <td class="r" style="">R$ 94</td>
+    <td class="r">11.1%</td>
+    <td class="r" style="color:var(--green)">81%</td>
+    <td class="r">170</td>
+    <td class="r" style="color:var(--text2)">64.7</td>
+    <td class="r" style="">54d</td>
+    <td class="r" style="">4d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac alc aa l4p3un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC AA L4P3UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 1.0k</td>
+    <td class="r" style="">R$ 113</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">78%</td>
+    <td class="r">98</td>
+    <td class="r" style="color:var(--text2)">33.2</td>
+    <td class="r" style="color:var(--amber)">94d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="lamp rayovac led 11w">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LAMP RAYOVAC LED 11W</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 123</td>
+    <td class="r" style="">R$ 12</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="">29%</td>
+    <td class="r">25</td>
+    <td class="r" style="color:var(--text2)">21.1</td>
+    <td class="r" style="color:var(--amber)">138d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="lamp rayovac led 13w bra">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">LAMP RAYOVAC LED 13W BRA</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 155</td>
+    <td class="r" style="">R$ 16</td>
+    <td class="r">10.2%</td>
+    <td class="r" style="">29%</td>
+    <td class="r">26</td>
+    <td class="r" style="color:var(--text2)">21.0</td>
+    <td class="r" style="color:var(--amber)">133d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac alc gd 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC GD 2UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 2.6k</td>
+    <td class="r" style="">R$ 225</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">37%</td>
+    <td class="r">108</td>
+    <td class="r" style="color:var(--text2)">26.7</td>
+    <td class="r" style="">81d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac zinco sm gd 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO SM GD 2UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 530</td>
+    <td class="r" style="">R$ 46</td>
+    <td class="r">8.6%</td>
+    <td class="r" style="">36%</td>
+    <td class="r">70</td>
+    <td class="r" style="color:var(--text2)">15.8</td>
+    <td class="r" style="color:var(--amber)">122d</td>
+    <td class="r" style="">—</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac zinco bdj gd 12un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ZINCO BDJ GD 12UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 349</td>
+    <td class="r" style="">R$ 38</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">78%</td>
+    <td class="r">11</td>
+    <td class="r" style="color:var(--text2)">6.1</td>
+    <td class="r" style="color:var(--amber)">287d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="sem_venda" data-name="pilha rayovac elet sm alc 12v">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ELET SM ALC 12V</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 0</td>
+    <td class="r" style="">R$ 0</td>
+    <td class="r">9.1%</td>
+    <td class="r" style="">—</td>
+    <td class="r">0</td>
+    <td class="r" style="color:var(--text2)">13.3</td>
+    <td class="r" style="color:var(--amber)">110d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-sem_venda">Sem venda</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="volume" data-name="pilha rayovac elet botao cr2032">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ELET BOTAO CR2032</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 107</td>
+    <td class="r" style="">R$ 12</td>
+    <td class="r">10.9%</td>
+    <td class="r" style="color:var(--green)">78%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">13.0</td>
+    <td class="r" style="color:var(--amber)">97d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-volume">Volume</span></td></tr><tr class="prod-row" data-fam="ENERGIZER" data-st="alerta" data-name="pilha rayovac alc md 2un">
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">PILHA RAYOVAC ALC MD 2UN</td>
+    <td style="color:var(--text2);font-size:11px">ENERGIZER</td>
+    <td class="r">R$ 203</td>
+    <td class="r" style="">R$ 18</td>
+    <td class="r">8.7%</td>
+    <td class="r" style="">37%</td>
+    <td class="r">12</td>
+    <td class="r" style="color:var(--text2)">12.6</td>
+    <td class="r" style="color:var(--amber)">93d</td>
+    <td class="r" style="">3d</td>
+    <td><span class="badge badge-alerta">Alerta</span></td></tr></tbody>
+      </table>
+    </div>
+    <div id="all-count" style="font-size:11px;color:var(--text3);margin-top:10px">207 produtos</div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title">alertas que precisam de resposta</div>
+    <div class="alert r"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span><strong>35 produtos com estoque crescendo:</strong> FR BABYSEC ULTRA MEGA, FR BABYSEC ULTRA HIPER, ST LIQ MONANGE 240ML. Verificar NF e devoluções no ERP.</span></div><div class="alert r"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span><strong>26 produtos com ROI negativo:</strong> ST LIQ FLOR YPE 250ML, AMAC YPE CONC REF 900ML, CP SALON LINE 1LT/1KG. Remover das próximas ações.</span></div><div class="alert a"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span><strong>Estoques altos sem venda:</strong> SARD RALADA VIVA MAR 110G (20365 un), CAFE MARATA VACUO 500G TR (5580 un), FR BAYSEC PREM SHORTINHO  (2923 un).</span></div><div class="alert a"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Para análise mais precisa, inclua: data de início/fim da ação, metas por produto e histórico pré-ação.</span></div>
+  </div>
+
+  <div class="footer">Dashboard Comercial · processado em 23/06/2026</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  btn.classList.add('active');
+}
+
+function filterProducts() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const fam = document.getElementById('filter-fam').value;
+  const st = document.getElementById('filter-st').value;
+  let count = 0;
+  document.querySelectorAll('#all-body tr').forEach(tr => {
+    const name = tr.dataset.name || '';
+    const trFam = tr.dataset.fam || '';
+    const trSt = tr.dataset.st || '';
+    const show = (!q || name.includes(q) || trFam.toLowerCase().includes(q)) && (!fam || trFam === fam) && (!st || trSt === st);
+    tr.style.display = show ? '' : 'none';
+    if(show) count++;
+  });
+  document.getElementById('all-count').textContent = count + ' produto' + (count!==1?'s':'') + ' encontrado' + (count!==1?'s':'');
+}
+
+// Charts
+new Chart(document.getElementById('chart-fam'), {
+  type:'bar',
+  data:{
+    labels:["COTY", "SOFTYS", "SKALA", "WELLA", "SALON LINE", "QUIMICA AMPA", "ENERGIZER", "CRUSOE", "FALCON", "NEUTERRA", "TREVO", "CARGILL", "BIC", "PRO NOVA", "MARATA"],
+    datasets:[
+      {label:'Faturamento',data:[67916.68, 34942.05, 35186.77, 28823.08, 19105.91, 12802.7, 16770.35, 25988.78, 48251.12, 8006.61, 21595.83, 5962.24, 5026.17, 1860.41, 20.94],backgroundColor:'rgba(26,79,138,0.2)',borderColor:'rgba(26,79,138,0.7)',borderWidth:1},
+      {label:'Lucro',data:[4607.29, 2706.5, 2561.05, 2292.14, 2006.35, 1811.6, 1747.58, 1673.74, 1651.74, 694.37, 583.29, 534.47, 347.18, 148.94, 0.42],backgroundColor:'rgba(45,122,58,0.7)',borderColor:'rgba(45,122,58,1)',borderWidth:1}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{ticks:{font:{size:9},color:'#9a9a96'},grid:{display:false}},
+      y:{ticks:{font:{size:9},color:'#9a9a96',callback:v=>(v<0?'-':'')+'R$'+Math.round(Math.abs(v)/1000)+'k'},grid:{color:'rgba(0,0,0,0.05)'},afterDataLimits(s){s.min=Math.min(s.min,0)}}
+    }
+  }
+});
+
+const statColors = ["#8a7200", "#2d7a3a", "#b02020", "#9a9a96", "#d08000", "#cc4444"];
+const statusChart = new Chart(document.getElementById('chart-status'), {
+  type:'doughnut',
+  data:{labels:["Volume (32)", "Oportunidade (34)", "Cr\u00edtico (26)", "Sem venda (27)", "Alerta (53)", "Anomalia (35)"],datasets:[{data:[32, 34, 26, 27, 53, 35],backgroundColor:statColors,borderWidth:0,hoverOffset:3}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}
+});
+
+// Status legend
+const legEl = document.getElementById('status-legend');
+["Volume (32)", "Oportunidade (34)", "Cr\u00edtico (26)", "Sem venda (27)", "Alerta (53)", "Anomalia (35)"].forEach((label,i) => {
+  legEl.innerHTML += `<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${statColors[i]};flex-shrink:0"></span>${label}</span>`;
+});
+</script>
+</body>
+</html>
