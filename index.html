@@ -394,33 +394,52 @@ function processFile(file) {
 function parseSheet(rows) {
   const products = [];
   let currentFamily = null;
+  let fmt = 'old';
+  for(const row of rows) {
+    if(row[0] === 'Código Família') {
+      const h2 = String(row[2]||'').toLowerCase();
+      if(h2.includes('oferta') || h2.includes('emb') === false && h2 !== '') fmt = 'new';
+      break;
+    }
+  }
   for(const row of rows) {
     if(row[0] === 'Código Família') { currentFamily = String(row[1]||'').trim(); continue; }
     if(row[0] == null || String(row[0]).trim() === '') continue;
     const cod = parseFloat(row[0]);
     if(isNaN(cod)) continue;
-    const tv = parseFloat(row[11]) || 0;
-    const oferta = parseFloat(row[3]) || 0;
-    const liq = parseFloat(row[7]) || 0;
-    const tg = parseFloat(row[12]) || 0;
-    const fat = tv > 0 ? +(tv * oferta).toFixed(2) : 0;
-    const custo = tv > 0 ? +(tv * liq).toFixed(2) : 0;
-    const lucro = +(fat - custo).toFixed(2);
-    const inv = tv > 0 && tg < 0 ? +Math.abs(tg).toFixed(2) : 0;
-    const roi = inv > 0 ? +((lucro - inv) / inv * 100).toFixed(1) : null;
-    const margem = fat > 0 ? +(lucro / fat * 100).toFixed(1) : null;
-    const ei = parseInt(row[9]) || 0;
-    const ea = parseInt(row[10]) || 0;
-    const re = ei > 0 ? +Math.max(0, Math.min(100,(ei-ea)/ei*100)).toFixed(1) : 0;
-    let st = 'sem_venda';
-    if(tv < 0) st = 'anomalia';
-    else if(tv === 0) st = 'sem_venda';
-    else if(roi !== null && roi < 0) st = 'critico';
-    else if(roi !== null && roi > 300 && lucro > 3000) st = 'estrela';
-    else if(roi !== null && roi > 300) st = 'oportunidade';
-    else if(margem !== null && margem < 25) st = 'alerta';
-    else st = 'volume';
-    products.push({ c:parseInt(cod), p:String(row[1]||'').trim(), f:currentFamily||'—', tv, fat, lb:lucro, mg:margem, inv, roi, re, st, ei, ea, oferta });
+    let tv,oferta,liq,tg,ei,ea,ret,lu,cm,md,de,dsv,fat,lucro,inv,margem,roi;
+    if(fmt === 'new') {
+      oferta=parseFloat(row[2])||0; ei=parseInt(row[4])||0; ea=parseInt(row[5])||0;
+      tv=parseFloat(row[6])||0; tg=parseFloat(row[7])||0; ret=parseFloat(row[8])||0;
+      lu=parseFloat(row[9])||0; cm=parseFloat(row[10])||0; md=parseFloat(row[11])||0;
+      de=parseFloat(row[12])||0; dsv=parseFloat(row[13])||0;
+      fat=ret>0?+ret.toFixed(2):tv>0?+(tv*oferta).toFixed(2):0;
+      lucro=tv>0?+(lu*tv).toFixed(2):0;
+      inv=tv>0&&tg<0?+Math.abs(tg).toFixed(2):0;
+      margem=fat>0&&lucro>0?+(lucro/fat*100).toFixed(1):cm>0?+cm.toFixed(1):null;
+      roi=inv>0?+((lucro-inv)/inv*100).toFixed(1):null;
+    } else {
+      oferta=parseFloat(row[3])||0; liq=parseFloat(row[7])||0;
+      ei=parseInt(row[9])||0; ea=parseInt(row[10])||0;
+      tv=parseFloat(row[11])||0; tg=parseFloat(row[12])||0;
+      lu=0; cm=0; md=0; de=0; dsv=0;
+      fat=tv>0?+(tv*oferta).toFixed(2):0;
+      const custo=tv>0?+(tv*liq).toFixed(2):0;
+      lucro=+(fat-custo).toFixed(2);
+      inv=tv>0&&tg<0?+Math.abs(tg).toFixed(2):0;
+      margem=fat>0?+(lucro/fat*100).toFixed(1):null;
+      roi=inv>0?+((lucro-inv)/inv*100).toFixed(1):null;
+    }
+    const re=ei>0?+Math.max(0,Math.min(100,(ei-ea)/ei*100)).toFixed(1):0;
+    let st='sem_venda';
+    if(tv<0) st='anomalia';
+    else if(tv===0) st='sem_venda';
+    else if(roi!==null&&roi<0) st='critico';
+    else if(lucro>2000&&(margem||0)>10) st='estrela';
+    else if(roi!==null&&roi>100) st='oportunidade';
+    else if((margem||0)<8&&tv>0) st='alerta';
+    else if(tv>0) st='volume';
+    products.push({c:parseInt(cod),p:String(row[1]||'').trim(),f:currentFamily||'—',tv,fat,lb:lucro,mg:margem,inv,roi,re,ei,ea,oferta,lu,cm,md,de,dsv,st});
   }
   // families
   const famMap = {};
